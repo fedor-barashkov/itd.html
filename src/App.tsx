@@ -86,9 +86,16 @@ function App() {
 
       if (!userRes.ok) {
         if (userRes.status === 404) {
-          throw new Error('Пользователь не найден. Проверьте username.');
+          throw new Error('Пользователь не найден. Проверьте правильность username.');
         }
-        throw new Error(`Ошибка API: ${userRes.status}`);
+        if (userRes.status === 403) {
+          throw new Error('Превышен лимит запросов GitHub API. Подождите минуту и попробуйте снова.');
+        }
+        throw new Error(`Ошибка GitHub API (${userRes.status}). Попробуйте позже.`);
+      }
+
+      if (!reposRes.ok) {
+        throw new Error('Не удалось загрузить репозитории. Попробуйте снова.');
       }
 
       const userData: GitHubUser = await userRes.json();
@@ -142,8 +149,8 @@ function App() {
             <h1 className="text-xl font-semibold text-[#c9d1d9] hidden sm:block">GitHub Viewer</h1>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex-1 max-w-xl">
-            <div className="relative">
+          <form onSubmit={handleSubmit} className="flex-1 max-w-xl flex gap-2">
+            <div className="relative flex-1">
               <input
                 type="text"
                 value={searchInput}
@@ -155,6 +162,13 @@ function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#238636] hover:bg-[#2ea043] disabled:opacity-50 text-white rounded-md font-medium text-sm transition-colors whitespace-nowrap"
+            >
+              {loading ? 'Поиск...' : 'Найти'}
+            </button>
           </form>
         </div>
       </header>
@@ -174,7 +188,19 @@ function App() {
             <svg className="w-12 h-12 mx-auto text-[#f85149] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
-            <p className="text-[#f85149] font-medium">{error}</p>
+            <p className="text-[#f85149] font-medium mb-3">{error}</p>
+            <p className="text-[#8b949e] text-sm mb-4">Попробуйте один из этих профилей:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['octocat', 'torvalds', 'gaearon', 'sindresorhus'].map(name => (
+                <button
+                  key={name}
+                  onClick={() => { setSearchInput(name); fetchProfile(name); }}
+                  className="px-3 py-1 bg-[#21262d] border border-[#30363d] rounded-full text-[#58a6ff] text-sm hover:bg-[#30363d] transition-colors"
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -431,9 +457,21 @@ function App() {
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
             </svg>
             <h2 className="text-2xl font-semibold text-[#c9d1d9] mb-2">GitHub Profile Viewer</h2>
-            <p className="text-[#8b949e] max-w-md mx-auto">
-              Введите GitHub username в поисковую строку выше, чтобы просмотреть профиль и репозитории
+            <p className="text-[#8b949e] max-w-md mx-auto mb-6">
+              Введите GitHub username в поисковую строку выше и нажмите кнопку «Найти»
             </p>
+            <p className="text-[#8b949e] text-sm mb-3">Или попробуйте:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['octocat', 'torvalds', 'gaearon', 'sindresorhus', 'tj'].map(name => (
+                <button
+                  key={name}
+                  onClick={() => { setSearchInput(name); fetchProfile(name); }}
+                  className="px-4 py-2 bg-[#21262d] border border-[#30363d] rounded-md text-[#58a6ff] text-sm font-medium hover:bg-[#30363d] hover:border-[#58a6ff] transition-colors"
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </main>
