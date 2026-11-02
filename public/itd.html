@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ИТД — Исполнительная документация</title>
+<style>
+:root{--bg:#202020;--surface:#2b2b2b;--surface-2:#323232;--side:#1c1c1c;--line:#3b3b3b;--fg:#f3f3f3;--fg-2:#c8c8c8;--fg-3:#9a9a9a;--accent:#60cdff;--accent-fg:#00283d;--accent-soft:#1d3747;--ok:#7fd572;--ok-soft:#1e3320;--warn:#ffd75e;--warn-soft:#3a3212;--bad:#ff9aa4;--bad-soft:#47272a;--r:8px;--r-sm:4px;--shadow:none;--font:"Segoe UI",system-ui,sans-serif}
+@media(prefers-color-scheme:light){:root{--bg:#f3f3f3;--surface:#fff;--surface-2:#f7f7f7;--side:#ebebeb;--line:#e1e1e1;--fg:#1b1b1b;--fg-2:#5d5d5d;--fg-3:#8a8a8a;--accent:#005fb8;--accent-fg:#fff;--accent-soft:#e3eefa;--ok:#0f7b0f;--ok-soft:#e3f2e3;--warn:#8a5300;--warn-soft:#fff1c7;--bad:#c42b1c;--bad-soft:#fde7e9;--shadow:0 1px 3px rgba(0,0,0,.08)}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--font);height:100vh;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--side);border-bottom:1px solid var(--line);min-height:48px}
+.logo{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-size:10px;font-weight:700}
+h1{font-size:18px;font-weight:600}
+.main{display:grid;grid-template-columns:220px 1fr;overflow:hidden}
+nav{background:var(--side);border-right:1px solid var(--line);padding:12px 8px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+nav button{display:flex;align-items:center;gap:8px;padding:8px 12px;border:0;background:0;border-radius:var(--r);cursor:pointer;color:var(--fg-2);text-align:left;width:100%;font-size:13px}
+nav button:hover{background:var(--surface-2);color:var(--fg)}
+nav button.active{background:var(--surface);color:var(--fg);font-weight:600;box-shadow:var(--shadow)}
+nav button.active::before{content:"";width:3px;height:60%;border-radius:3px;background:var(--accent);position:absolute;left:0}
+nav button{position:relative}
+.content{overflow:auto;padding:24px}
+.page{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.main{grid-template-columns:1fr}nav{display:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-head h2{font-size:15px;font-weight:600}
+.kpi{display:flex;flex-direction:column;gap:4px}
+.kpi .label{font-size:12px;color:var(--fg-2)}
+.kpi .value{font-size:22px;font-weight:700}
+.kpi .delta{font-size:12px;color:var(--fg-3)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--fg-3);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface-2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--fg-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn.sm{padding:4px 10px;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:99px;font-weight:600}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.info{background:var(--accent-soft);color:var(--accent)}
+.bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.li:last-child{border:0}
+.li .body{flex:1;min-width:0}
+.li .t{font-weight:600;font-size:13px}
+.li .m{font-size:12px;color:var(--fg-3)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:100%;max-width:500px;max-height:90vh;overflow:auto}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:12px}
+.modal-body label{font-size:12px;color:var(--fg-2);display:block;margin-bottom:4px}
+.modal-body input,.modal-body select,.modal-body textarea{width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px}
+.modal-body textarea{resize:vertical;min-height:60px}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.eyebrow{font-size:12px;color:var(--fg-3);margin-bottom:2px}
+.empty{text-align:center;padding:40px;color:var(--fg-3)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">ИТД</div>
+  <h1>Исполнительная документация</h1>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn sm" onclick="exportData()">💾 Экспорт</button>
+    <button class="btn sm" onclick="document.getElementById('imp').click()">📂 Импорт</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+<div class="main">
+  <nav id="nav"></nav>
+  <div class="content"><div class="page" id="page"></div></div>
+</div>
+<div id="modal-root"></div>
+
+<script>
+const KEY='itd-panel-v1';
+const TODAY=new Date().toISOString().slice(0,10);
+const $=s=>document.querySelector(s);
+const esc=s=>s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; 
+const rub=n=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:0}).format(n||0);
+const ru=iso=>{if(!iso)return'';const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];const[y,mo,d]=iso.split('-');return`${+d} ${m[+mo-1]} ${y}`};
+const ruShort=iso=>{if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}.${m}.${y}`};
+const newId=t=>t+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+
+const JLIB={'КС-1':'Общий журнал работ','КС-1а':'Журнал подготовительных работ','КС-2':'Индивидуальный спецжурнал','КС-3':'Журнал бетонных работ','КС-4':'Журнал сварочных работ','КС-5':'Журнал антикоррозийной защиты','КС-6':'Журнал изоляционных работ'};
+const ITD_TYPES={'АОСР':'АОСР (скрытые работы)','АОКР':'АОКР (конструкции)','АОУР':'АОУР (устройства)','Исполнительные схемы':'Исполнительные схемы','Паспорта':'Паспорта на материалы','Сертификаты':'Сертификаты соответствия','Протоколы':'Протоколы испытаний'};
+const STATUS_ACT=['В работе','Подписан','Замечания'];
+const STATUS_J=['Открыт','Закрыт'];
+const STATUS_C=['Ожидается','Получен','Просрочен'];
+
+let state={objects:{},acts:{},journals:{},entries:{},certs:{}};
+let currentPage='dashboard';
+let currentObj=null;
+
+function load(){try{const d=localStorage.getItem(KEY);if(d)state=JSON.parse(d)}catch{}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function all(col){return Object.values(state[col]||{})}
+function byObj(col,objId){return all(col).filter(x=>x.obj===objId)}
+function nextN(col){const ns=all(col).map(x=>parseInt(x.n)||0);return String((ns.length?Math.max(...ns):0)+1)}
+
+function exportData(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`itd-backup-${TODAY}.json`;a.click()}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();render();alert('Данные загружены')}catch{alert('Ошибка файла')}};r.readAsText(f)}
+
+// NAV
+const NAV=[
+  {id:'dashboard',label:'📊 Главная'},
+  {id:'objects',label:'🏗️ Объекты'},
+  {id:'acts',label:'📋 Акты ИД'},
+  {id:'journals',label:'📖 Журналы'},
+  {id:'entries',label:'✏️ Записи'},
+  {id:'certs',label:'🏅 Сертификаты'},
+];
+
+function renderNav(){
+  $('#nav').innerHTML=NAV.map(n=>`<button class="${currentPage===n.id?'active':''}" onclick="go('${n.id}')">${n.label}</button>`).join('');
+}
+
+function go(page,obj){currentPage=page;currentObj=obj||null;render()}
+
+function render(){
+  renderNav();
+  const p=$('#page');
+  switch(currentPage){
+    case'dashboard':p.innerHTML=renderDashboard();break;
+    case'objects':p.innerHTML=renderObjects();break;
+    case'acts':p.innerHTML=renderActs();break;
+    case'journals':p.innerHTML=renderJournals();break;
+    case'entries':p.innerHTML=renderEntries();break;
+    case'certs':p.innerHTML=renderCerts();break;
+    case'obj':p.innerHTML=renderObjectCard();break;
+  }
+}
+
+function renderDashboard(){
+  const objs=all('objects'),acts=all('acts'),jrs=all('journals'),certs=all('certs');
+  const signed=acts.filter(a=>a.status==='Подписан').length;
+  const openJ=jrs.filter(j=>j.status==='Открыт').length;
+  const missCerts=certs.filter(c=>c.status!=='Получен').length;
+  return`
+    <div class="eyebrow">ИТД • ${ru(TODAY)}</div>
+    <h1>Главная</h1>
+    <div class="grid g4">
+      <div class="card"><div class="kpi"><div class="label">Объекты</div><div class="value">${objs.length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Акты ИД</div><div class="value">${acts.length}</div><div class="delta">${signed} подписано</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Журналы</div><div class="value">${jrs.length}</div><div class="delta">${openJ} открыто</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Сертификаты</div><div class="value">${certs.length}</div><div class="delta">${missCerts?'⚠ '+missCerts+' ожидается':'✅ все получены'}</div></div></div>
+    </div>
+    <div class="card"><div class="card-head"><h2>Последние акты</h2><button class="btn sm" onclick="go('acts')">Все →</button></div>
+      ${acts.length?`<div class="list">${acts.slice(-5).reverse().map(a=>`<div class="li" style="cursor:pointer" onclick="editAct('${a.id}')"><div class="body"><div class="t">${esc(a.kind)} №${esc(a.n)}</div><div class="m">${esc(a.works?.slice(0,60)||'')}</div></div><span class="pill ${a.status==='Подписан'?'ok':'warn'}">${esc(a.status)}</span></div>`).join('')}</div>`:'<div class="empty">Нет актов</div>'}
+    </div>`;
+}
+
+function renderObjects(){
+  const objs=all('objects');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Объекты</h1><div class="eyebrow">${objs.length} объектов</div></div><button class="btn primary" onclick="editObj()">+ Новый объект</button></div>
+    <div class="card"><table><thead><tr><th>Наименование</th><th>Заказчик</th><th>Акты</th><th>Журналы</th><th></th></tr></thead><tbody>
+    ${objs.map(o=>`<tr class="click" onclick="go('obj','${o.id}')"><td><b>${esc(o.name)}</b></td><td>${esc(o.client||'—')}</td><td>${byObj('acts',o.id).length}</td><td>${byObj('journals',o.id).length}</td><td><button class="btn sm" onclick="event.stopPropagation();editObj('${o.id}')">✏️</button></td></tr>`).join('')}
+    ${objs.length?'':'<tr><td colspan="5" class="empty">Нет объектов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderObjectCard(){
+  const o=state.objects[currentObj];if(!o)return'<div class="empty">Объект не найден</div>';
+  const acts=byObj('acts',o.id),jrs=byObj('journals',o.id),cs=byObj('certs',o.id);
+  return`<button class="btn" onclick="go('objects')">← Назад</button>
+    <div style="display:flex;justify-content:space-between;align-items:center"><div><h1>${esc(o.name)}</h1><div class="eyebrow">${esc(o.client||'')}</div></div><button class="btn" onclick="editObj('${o.id}')">✏️ Изменить</button></div>
+    <div class="grid g4">
+      <div class="card"><div class="kpi"><div class="label">Акты</div><div class="value">${acts.length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Журналы</div><div class="value">${jrs.length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Записи</div><div class="value">${byObj('entries',o.id).length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Сертификаты</div><div class="value">${cs.length}</div></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><div class="card-head"><h2>Акты ИД</h2><button class="btn sm" onclick="editAct(null,'${o.id}')">+ Добавить</button></div>
+        ${acts.length?`<div class="list">${acts.map(a=>`<div class="li" style="cursor:pointer" onclick="editAct('${a.id}')"><div class="body"><div class="t">${esc(a.kind)} №${esc(a.n)}</div><div class="m">${ruShort(a.d2)}</div></div><span class="pill ${a.status==='Подписан'?'ok':'warn'}">${esc(a.status)}</span></div>`).join('')}</div>`:'<div class="empty">Нет актов</div>'}
+      </div>
+      <div class="card"><div class="card-head"><h2>Журналы</h2><button class="btn sm" onclick="editJournal(null,'${o.id}')">+ Добавить</button></div>
+        ${jrs.length?`<div class="list">${jrs.map(j=>`<div class="li" style="cursor:pointer" onclick="editJournal('${j.id}')"><div class="body"><div class="t">${esc(JLIB[j.code]||j.code)}</div><div class="m">${esc(j.resp)}</div></div><span class="pill ${j.status==='Открыт'?'info':'ok'}">${esc(j.status)}</span></div>`).join('')}</div>`:'<div class="empty">Нет журналов</div>'}
+      </div>
+    </div>`;
+}
+
+function renderActs(){
+  const acts=all('acts');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Акты ИД</h1><div class="eyebrow">${acts.length} актов</div></div><button class="btn primary" onclick="editAct()">+ Новый акт</button></div>
+    <div class="card"><table><thead><tr><th>Вид</th><th>№</th><th>Объект</th><th>Дата</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${acts.map(a=>`<tr class="click" onclick="editAct('${a.id}')"><td>${esc(a.kind)}</td><td><b>${esc(a.n)}</b></td><td>${esc((state.objects[a.obj]||{}).name||'—')}</td><td>${ruShort(a.d2)}</td><td><span class="pill ${a.status==='Подписан'?'ok':'warn'}">${esc(a.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('acts','${a.id}')">🗑️</button></td></tr>`).join('')}
+    ${acts.length?'':'<tr><td colspan="6" class="empty">Нет актов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderJournals(){
+  const jrs=all('journals');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Журналы работ</h1><div class="eyebrow">${jrs.length} журналов</div></div><button class="btn primary" onclick="editJournal()">+ Новый журнал</button></div>
+    <div class="card"><table><thead><tr><th>Тип</th><th>Объект</th><th>Ответственный</th><th>Записей</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${jrs.map(j=>`<tr class="click" onclick="editJournal('${j.id}')"><td><b>${esc(JLIB[j.code]||j.code)}</b></td><td>${esc((state.objects[j.obj]||{}).name||'—')}</td><td>${esc(j.resp)}</td><td>${byObj('entries',j.obj).filter(e=>e.code===j.code).length}</td><td><span class="pill ${j.status==='Открыт'?'info':'ok'}">${esc(j.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('journals','${j.id}')">🗑️</button></td></tr>`).join('')}
+    ${jrs.length?'':'<tr><td colspan="6" class="empty">Нет журналов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderEntries(){
+  const ents=all('entries').sort((a,b)=>b.date.localeCompare(a.date));
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Записи в журналы</h1><div class="eyebrow">${ents.length} записей</div></div><button class="btn primary" onclick="editEntry()">+ Новая запись</button></div>
+    <div class="card"><table><thead><tr><th>Дата</th><th>Журнал</th><th>Объект</th><th>Работы</th><th>Кто внёс</th><th></th></tr></thead><tbody>
+    ${ents.map(e=>`<tr class="click" onclick="editEntry('${e.id}')"><td>${ruShort(e.date)}</td><td>${esc(JLIB[e.code]||e.code)}</td><td>${esc((state.objects[e.obj]||{}).name||'—')}</td><td>${esc(e.text?.slice(0,50))}</td><td>${esc(e.who)}</td><td><button class="btn sm" onclick="event.stopPropagation();delItem('entries','${e.id}')">🗑️</button></td></tr>`).join('')}
+    ${ents.length?'':'<tr><td colspan="6" class="empty">Нет записей</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderCerts(){
+  const cs=all('certs');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Сертификаты и паспорта</h1><div class="eyebrow">${cs.length} документов</div></div><button class="btn primary" onclick="editCert()">+ Добавить</button></div>
+    <div class="card"><table><thead><tr><th>Материал</th><th>Документ</th><th>Объект</th><th>Поставщик</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>`<tr class="click" onclick="editCert('${c.id}')"><td><b>${esc(c.material)}</b></td><td>${esc(c.doc||'—')}</td><td>${esc((state.objects[c.obj]||{}).name||'—')}</td><td>${esc(c.supplier||'—')}</td><td><span class="pill ${c.status==='Получен'?'ok':c.status==='Просрочен'?'bad':'warn'}">${esc(c.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('certs','${c.id}')">🗑️</button></td></tr>`).join('')}
+    ${cs.length?'':'<tr><td colspan="6" class="empty">Нет сертификатов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+// MODALS
+function showModal(title,fields,data,onSave){
+  const vals={...data};
+  const html=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h2>${title}</h2><button class="btn sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">${fields.map(f=>{
+      if(f.type==='select')return`<div><label>${f.label}</label><select id="mf_${f.key}">${f.options.map(o=>`<option value="${o}"${vals[f.key]===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+      if(f.type==='textarea')return`<div><label>${f.label}</label><textarea id="mf_${f.key}" rows="3">${esc(vals[f.key]||'')}</textarea></div>`;
+      return`<div><label>${f.label}</label><input id="mf_${f.key}" type="${f.type||'text'}" value="${esc(vals[f.key]||'')}"></div>`;
+    }).join('')}</div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Отмена</button><button class="btn primary" id="modalSave">Сохранить</button></div>
+  </div></div>`;
+  $('#modal-root').innerHTML=html;
+  $('#modalSave').onclick=()=>{
+    fields.forEach(f=>{vals[f.key]=document.getElementById('mf_'+f.key).value});
+    onSave(vals);closeModal();
+  };
+}
+function closeModal(){$('#modal-root').innerHTML=''}
+
+function objOptions(sel){return Object.entries(state.objects).map(([id,o])=>`<option value="${id}"${sel===id?' selected':''}>${esc(o.name)}</option>`).join('')}
+
+function editObj(id){
+  const o=id?state.objects[id]:{};
+  showModal(id?'Изменить объект':'Новый объект',[
+    {key:'name',label:'Наименование *'},
+    {key:'client',label:'Заказчик'},
+    {key:'city',label:'Город'},
+    {key:'inn',label:'ИНН'},
+    {key:'zastr',label:'Застройщик'},
+    {key:'builder',label:'Лицо, осуществляющее строительство'},
+    {key:'designer',label:'Проектировщик'},
+    {key:'rep1',label:'Представитель застройщика'},
+    {key:'rep2',label:'Представитель строителя'},
+    {key:'rep3',label:'Представитель строителя (стройконтроль)'},
+    {key:'rep4',label:'Представитель проектировщика'},
+    {key:'rep5',label:'Представитель исполнителя работ'},
+  ],o,v=>{
+    const nid=id||newId('obj');
+    state.objects[nid]={...v,id:nid};save();render();
+  });
+}
+
+function editAct(id,preObj){
+  const a=id?state.acts[id]:{obj:preObj||'',status:'В работе',kind:'АОСР'};
+  showModal(id?'Изменить акт':'Новый акт',[
+    {key:'obj',label:'Объект *',type:'select',options:['',...Object.keys(state.objects)].map(k=>k?state.objects[k]?.name:'—').length?null:null},
+    {key:'kind',label:'Вид акта',type:'select',options:Object.keys(ITD_TYPES)},
+    {key:'n',label:'Номер',type:'text'},
+    {key:'d1',label:'Дата начала',type:'date'},
+    {key:'d2',label:'Дата окончания',type:'date'},
+    {key:'works',label:'Наименование работ *',type:'textarea'},
+    {key:'proj',label:'Проектная документация',type:'textarea'},
+    {key:'mats',label:'Материалы',type:'textarea'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_ACT},
+  ],a,v=>{
+    if(!v.n)v.n=nextN('acts');
+    const nid=id||newId('act');
+    state.acts[nid]={...v,id:nid};save();render();
+  });
+  // Fix obj select
+  setTimeout(()=>{
+    const sel=document.getElementById('mf_obj');
+    if(sel){sel.innerHTML='<option value="">—</option>'+objOptions(a.obj)}
+  },0);
+}
+
+function editJournal(id,preObj){
+  const j=id?state.journals[id]:{obj:preObj||'',status:'Открыт',code:'КС-1'};
+  showModal(id?'Изменить журнал':'Новый журнал',[
+    {key:'obj',label:'Объект *'},
+    {key:'code',label:'Тип журнала',type:'select',options:Object.keys(JLIB)},
+    {key:'resp',label:'Ответственный *'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_J},
+  ],j,v=>{
+    const nid=id||newId('j');
+    state.journals[nid]={...v,id:nid};save();render();
+  });
+  setTimeout(()=>{const sel=document.getElementById('mf_obj');if(sel){sel.innerHTML='<option value="">—</option>'+objOptions(j.obj)}},0);
+}
+
+function editEntry(id){
+  const e=id?state.entries[id]:{date:TODAY};
+  const jOpts=all('journals').map(j=>`<option value="${j.code}"${e.code===j.code?' selected':''}>${JLIB[j.code]||j.code}</option>`).join('');
+  showModal(id?'Изменить запись':'Новая запись',[
+    {key:'obj',label:'Объект *'},
+    {key:'code',label:'Журнал *',type:'select',options:Object.keys(JLIB)},
+    {key:'date',label:'Дата *',type:'date'},
+    {key:'text',label:'Наименование работ *',type:'textarea'},
+    {key:'who',label:'Кто внёс *'},
+  ],e,v=>{
+    const nid=id||newId('e');
+    state.entries[nid]={...v,id:nid};save();render();
+  });
+  setTimeout(()=>{const sel=document.getElementById('mf_obj');if(sel){sel.innerHTML='<option value="">—</option>'+objOptions(e.obj)}},0);
+}
+
+function editCert(id){
+  const c=id?state.certs[id]:{status:'Ожидается'};
+  showModal(id?'Изменить':'Новый сертификат',[
+    {key:'obj',label:'Объект *'},
+    {key:'material',label:'Материал / изделие *'},
+    {key:'doc',label:'Номер документа'},
+    {key:'supplier',label:'Поставщик'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_C},
+  ],c,v=>{
+    const nid=id||newId('c');
+    state.certs[nid]={...v,id:nid};save();render();
+  });
+  setTimeout(()=>{const sel=document.getElementById('mf_obj');if(sel){sel.innerHTML='<option value="">—</option>'+objOptions(c.obj)}},0);
+}
+
+function delItem(col,id){if(confirm('Удалить?')){delete state[col][id];save();render()}}
+
+load();render();
+</script>
+</body>
+</html>
