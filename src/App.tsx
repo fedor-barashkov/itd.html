@@ -1,501 +1,723 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import type { AppState, AnyItem, Zone, Obj, Task } from './types';
+import { ZONES, NAV_ITEMS, JLIB, ITD_LIB, FORM_SPECS, DEFAULT_SETTINGS } from './data';
+import { loadState, saveState, addItem, updateItem, deleteItem, getAll, getByObj, exportData, importData, getStats } from './store';
+import { esc, rub, num, pct, TODAY, ru, ruShort, newId, nextNumber, formatDate, relativeTime, sumWords } from './utils';
 
-// Types
-interface GitHubUser {
-  login: string;
-  avatar_url: string;
-  html_url: string;
-  name: string | null;
-  bio: string | null;
-  public_repos: number;
-  followers: number;
-  following: number;
-  location: string | null;
-  company: string | null;
-  blog: string | null;
-  twitter_username: string | null;
-  created_at: string;
-}
-
-interface GitHubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string | null;
-  language: string | null;
-  stargazers_count: number;
-  forks_count: number;
-  updated_at: string;
-  fork: boolean;
-  topics: string[];
-  homepage: string | null;
-}
-
-// Language colors
-const languageColors: Record<string, string> = {
-  JavaScript: '#f1e05a',
-  TypeScript: '#3178c6',
-  Python: '#3572A5',
-  Java: '#b07219',
-  'C++': '#f34b7d',
-  C: '#555555',
-  'C#': '#178600',
-  Go: '#00ADD8',
-  Rust: '#dea584',
-  Ruby: '#701516',
-  PHP: '#4F5D95',
-  Swift: '#F05138',
-  Kotlin: '#A97BFF',
-  Dart: '#00B4AB',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
-  Shell: '#89e051',
-  Vue: '#41b883',
-  Svelte: '#ff3e00',
-  Scala: '#c22d40',
-  Haskell: '#5e5086',
-  Lua: '#000080',
-  R: '#198CE7',
-  'Jupyter Notebook': '#DA5B0B',
-  Dockerfile: '#384d54',
+// ==================== ИКОНКИ (SVG) ====================
+const Icons: Record<string, React.FC<{ className?: string }>> = {
+  'layout-dashboard': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>,
+  'building-2': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>,
+  'check-square': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  'calculator': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+  'drafting-compass': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2v4"/><path d="m6.34 6.34 2.83 2.83"/><path d="M2 12h4"/><path d="m6.34 17.66 2.83-2.83"/><path d="M12 18v4"/><path d="m17.66 17.66-2.83-2.83"/><path d="M18 12h4"/><path d="m17.66 6.34-2.83 2.83"/></svg>,
+  'clipboard-check': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>,
+  'notebook-pen': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M14 15H9v-5"/><path d="M18.37 3.63 8 14v3h3l10.37-10.37a2 2 0 0 0-2.83-2.83Z"/></svg>,
+  'badge-check': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>,
+  'file-text': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
+  'receipt': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>,
+  'file-check': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/></svg>,
+  'landmark': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>,
+  'shopping-cart': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>,
+  'users': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  'hard-hat': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 15V6.5a3.5 3.5 0 0 1 7 0V15"/><path d="M4 15v-4a8 8 0 0 1 16 0v4"/></svg>,
+  'settings': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+  'search': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+  'plus': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+  'pencil': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
+  'trash': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+  'x': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+  'sun': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
+  'moon': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+  'bell': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  'chevron-right': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>,
+  'download': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+  'upload': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
+  'arrow-left': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+  'folder': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>,
+  'briefcase': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+  'alert-triangle': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+  'check': ({ className }) => <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>,
 };
 
-function App() {
-  const [username, setUsername] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [user, setUser] = useState<GitHubUser | null>(null);
-  const [repos, setRepos] = useState<GitHubRepo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'updated' | 'stars' | 'name'>('updated');
-  const [filterLanguage, setFilterLanguage] = useState<string>('all');
+const Ic = ({ name, className = 'w-5 h-5' }: { name: string; className?: string }) => {
+  const Icon = Icons[name];
+  return Icon ? <Icon className={className} /> : null;
+};
 
-  const fetchProfile = useCallback(async (user: string) => {
-    if (!user.trim()) return;
-    setLoading(true);
-    setError(null);
-    setUser(null);
-    setRepos([]);
+// ==================== ОСНОВНОЙ КОМПОНЕНТ ====================
+export default function App() {
+  const [state, setState] = useState<AppState>(loadState);
+  const [page, setPage] = useState('dashboard');
+  const [modal, setModal] = useState<{ type: string; id?: string; pre?: Record<string, any> } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
 
-    try {
-      const [userRes, reposRes] = await Promise.all([
-        fetch(`https://api.github.com/users/${user}`),
-        fetch(`https://api.github.com/users/${user}/repos?per_page=100&sort=updated`),
-      ]);
+  // Сохранение при изменении
+  useEffect(() => { saveState(state); }, [state]);
 
-      if (!userRes.ok) {
-        if (userRes.status === 404) {
-          throw new Error('Пользователь не найден. Проверьте правильность username.');
-        }
-        if (userRes.status === 403) {
-          throw new Error('Превышен лимит запросов GitHub API. Подождите минуту и попробуйте снова.');
-        }
-        throw new Error(`Ошибка GitHub API (${userRes.status}). Попробуйте позже.`);
+  // Тема
+  useEffect(() => {
+    const theme = state.settings.theme;
+    const root = document.documentElement;
+    if (theme === 'dark') root.setAttribute('data-theme', 'dark');
+    else if (theme === 'light') root.setAttribute('data-theme', 'light');
+    else root.removeAttribute('data-theme');
+  }, [state.settings.theme]);
+
+  // Горячие клавиши
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
       }
-
-      if (!reposRes.ok) {
-        throw new Error('Не удалось загрузить репозитории. Попробуйте снова.');
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setModal(null);
       }
-
-      const userData: GitHubUser = await userRes.json();
-      const reposData: GitHubRepo[] = await reposRes.json();
-
-      setUser(userData);
-      setRepos(reposData);
-      setUsername(user);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Произошла ошибка');
-    } finally {
-      setLoading(false);
-    }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchProfile(searchInput.trim());
+  // Тост
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  // CRUD
+  const handleSave = useCallback((type: string, values: Record<string, any>, id?: string) => {
+    if (id) {
+      setState(s => updateItem(s, id, values));
+      showToast('Изменения сохранены');
+    } else {
+      const item: any = { type, ...values, created: TODAY };
+      if (!item.n && ['est', 'idact', 'inv', 'act', 'contract'].includes(type)) {
+        item.n = nextNumber(getAll(state, type), type);
+      }
+      setState(s => addItem(s, item));
+      showToast(`${FORM_SPECS[type]?.n || type}: добавлено`);
+    }
+    setModal(null);
+  }, [state, showToast]);
+
+  const handleDelete = useCallback((id: string) => {
+    if (!confirm('Удалить запись? Это действие нельзя отменить.')) return;
+    setState(s => deleteItem(s, id));
+    setModal(null);
+    showToast('Удалено');
+  }, [showToast]);
+
+  // Поиск
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return getAll(state).filter(item => {
+      const str = JSON.stringify(item).toLowerCase();
+      return str.includes(q);
+    }).slice(0, 20);
+  }, [state, searchQuery]);
+
+  const stats = useMemo(() => getStats(state), [state]);
+  const objs = useMemo(() => getAll(state, 'obj') as Obj[], [state]);
+  const tasks = useMemo(() => getAll(state, 'task') as Task[], [state]);
+
+  // Рендер страницы
+  const renderPage = () => {
+    switch (page) {
+      case 'dashboard': return <Dashboard state={state} stats={stats} objs={objs} tasks={tasks} onNavigate={setPage} onNew={(t) => setModal({ type: t })} />;
+      case 'objects': return <ObjectsPage state={state} onEdit={(id) => setModal({ type: 'obj', id })} onNew={() => setModal({ type: 'obj' })} onDelete={handleDelete} onOpen={(id) => setPage('obj_' + id)} />;
+      case 'tasks': return <TasksPage state={state} onEdit={(id) => setModal({ type: 'task', id })} onNew={() => setModal({ type: 'task' })} onToggle={(id) => { const t = state.items[id] as Task; setState(s => updateItem(s, id, { done: !t.done })); }} onDelete={handleDelete} />;
+      case 'estimates': return <SimpleList state={state} type="est" title="Сметы" onEdit={(id) => setModal({ type: 'est', id })} onNew={() => setModal({ type: 'est' })} onDelete={handleDelete} />;
+      case 'pd': return <SimpleList state={state} type="pd" title="Разделы ПД" onEdit={(id) => setModal({ type: 'pd', id })} onNew={() => setModal({ type: 'pd' })} onDelete={handleDelete} />;
+      case 'id': return <SimpleList state={state} type="itd" title="ИТД" onEdit={(id) => setModal({ type: 'itd', id })} onNew={() => setModal({ type: 'itd' })} onDelete={handleDelete} />;
+      case 'journals': return <SimpleList state={state} type="journal" title="Журналы работ" onEdit={(id) => setModal({ type: 'journal', id })} onNew={() => setModal({ type: 'journal' })} onDelete={handleDelete} />;
+      case 'certs': return <SimpleList state={state} type="cert" title="Сертификаты и паспорта" onEdit={(id) => setModal({ type: 'cert', id })} onNew={() => setModal({ type: 'cert' })} onDelete={handleDelete} />;
+      case 'contracts': return <SimpleList state={state} type="contract" title="Договоры" onEdit={(id) => setModal({ type: 'contract', id })} onNew={() => setModal({ type: 'contract' })} onDelete={handleDelete} />;
+      case 'invoices': return <SimpleList state={state} type="inv" title="Счета" onEdit={(id) => setModal({ type: 'inv', id })} onNew={() => setModal({ type: 'inv' })} onDelete={handleDelete} onTogglePaid={(id) => { const inv = state.items[id] as any; setState(s => updateItem(s, id, { paid: !inv.paid })); }} />;
+      case 'acts': return <SimpleList state={state} type="act" title="Акты" onEdit={(id) => setModal({ type: 'act', id })} onNew={() => setModal({ type: 'act' })} onDelete={handleDelete} />;
+      case 'bank': return <BankPage state={state} onEdit={(id) => setModal({ type: id.startsWith('bank_') ? 'bank' : 'bankop', id })} onNew={(t) => setModal({ type: t || 'bank' })} onDelete={handleDelete} />;
+      case 'purchases': return <SimpleList state={state} type="pur" title="Закупки" onEdit={(id) => setModal({ type: 'pur', id })} onNew={() => setModal({ type: 'pur' })} onDelete={handleDelete} />;
+      case 'clients': return <SimpleList state={state} type="client" title="Заказчики" onEdit={(id) => setModal({ type: 'client', id })} onNew={() => setModal({ type: 'client' })} onDelete={handleDelete} />;
+      case 'contractors': return <SimpleList state={state} type="contractor" title="Исполнители" onEdit={(id) => setModal({ type: 'contractor', id })} onNew={() => setModal({ type: 'contractor' })} onDelete={handleDelete} />;
+      case 'settings': return <SettingsPage state={state} onUpdate={(s) => setState(prev => ({ ...prev, settings: { ...prev.settings, ...s } }))} onExport={() => exportData(state)} onImport={async (f) => { const s = await importData(f); setState(s); showToast('Данные загружены'); }} onClear={() => { if (confirm('Удалить ВСЕ данные?')) { setState({ items: {}, settings: DEFAULT_SETTINGS }); showToast('Все данные удалены'); } }} showToast={showToast} />;
+      default:
+        if (page.startsWith('obj_')) {
+          const objId = page.slice(4);
+          return <ObjectCard state={state} objId={objId} onBack={() => setPage('objects')} onEdit={(t, id) => setModal({ type: t, id })} onNew={(t, pre) => setModal({ type: t, pre })} onDelete={handleDelete} />;
+        }
+        return <Dashboard state={state} stats={stats} objs={objs} tasks={tasks} onNavigate={setPage} onNew={(t) => setModal({ type: t })} />;
+    }
   };
 
-  // Get unique languages
-  const languages = [...new Set(repos.map(r => r.language).filter(Boolean))] as string[];
-
-  // Filter and sort repos
-  const filteredRepos = repos
-    .filter(r => filterLanguage === 'all' || r.language === filterLanguage)
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'stars': return b.stargazers_count - a.stargazers_count;
-        case 'name': return a.name.localeCompare(b.name);
-        case 'updated': return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-        default: return 0;
-      }
-    });
-
-  // Load default user on mount
-  useEffect(() => {
-    fetchProfile('octocat');
-    setSearchInput('octocat');
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#0d1117]">
+    <div className="app">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#161b22] border-b border-[#30363d]">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <svg height="32" viewBox="0 0 16 16" width="32" fill="#c9d1d9">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-            </svg>
-            <h1 className="text-xl font-semibold text-[#c9d1d9] hidden sm:block">GitHub Viewer</h1>
+      <header className="titlebar">
+        <div className="brand">
+          <div className="brand-mark">ПСД</div>
+          <span className="hidden sm:inline">Бизнес-панель</span>
+        </div>
+
+        <button onClick={() => setSearchOpen(true)} className="search">
+          <Ic name="search" className="w-4 h-4" />
+          <span className="flex-1 text-left text-sm">Глобальный поиск...</span>
+          <kbd className="text-xs opacity-60">Ctrl+K</kbd>
+        </button>
+
+        <div className="tools">
+          {/* Переключатель зон */}
+          <div className="hidden md:flex items-center gap-1 bg-[var(--surface-2)] rounded-lg p-1">
+            {state.settings.order.map(z => (
+              <button key={z} onClick={() => setState(s => ({ ...s, settings: { ...s.settings, zone: z } }))}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${state.settings.zone === z ? 'bg-[var(--surface)] text-[var(--fg)] shadow-sm' : 'text-[var(--fg-2)] hover:text-[var(--fg)]'}`}>
+                {ZONES[z].t}
+              </button>
+            ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex-1 max-w-xl flex gap-2">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Введите GitHub username..."
-                className="w-full px-4 py-2 pl-10 bg-[#0d1117] border border-[#30363d] rounded-md text-[#c9d1d9] placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] transition-colors"
-              />
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-[#238636] hover:bg-[#2ea043] disabled:opacity-50 text-white rounded-md font-medium text-sm transition-colors whitespace-nowrap"
-            >
-              {loading ? 'Поиск...' : 'Найти'}
-            </button>
-          </form>
+          <button onClick={() => setState(s => ({ ...s, settings: { ...s.settings, theme: s.settings.theme === 'dark' ? 'light' : s.settings.theme === 'light' ? 'system' : 'dark' } }))} className="icon-btn" title="Тема">
+            <Ic name={state.settings.theme === 'dark' ? 'moon' : state.settings.theme === 'light' ? 'sun' : 'sun'} className="w-4 h-4" />
+          </button>
+          <button className="icon-btn relative" title="Уведомления">
+            <Ic name="bell" className="w-4 h-4" />
+            {stats.overdueTasks > 0 && <span className="dot" />}
+          </button>
+          <div className="avatar">{(state.settings.company || 'П')[0]}</div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Loading */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-[#30363d] border-t-[#58a6ff] rounded-full animate-spin"></div>
-            <p className="mt-4 text-[#8b949e]">Загрузка профиля...</p>
-          </div>
-        )}
+      {/* Main Layout */}
+      <div className="shell">
+        {/* Sidebar */}
+        <aside className="side">
+          <nav className="nav-group">
+            {NAV_ITEMS.filter(n => !n.zone || n.zone === state.settings.zone || ['dashboard', 'objects', 'tasks', 'settings'].includes(n.id)).map(item => (
+              <button key={item.id} onClick={() => setPage(item.id)}
+                aria-current={page === item.id ? 'page' : undefined}
+                className="nav-item">
+                <span className="nav-ico"><Ic name={item.icon} className="w-4 h-4" /></span>
+                <span className="text-sm">{item.label}</span>
+                {item.id === 'tasks' && stats.openTasks > 0 && <span className="count">{stats.openTasks}</span>}
+              </button>
+            ))}
+          </nav>
 
-        {/* Error */}
-        {error && (
-          <div className="max-w-md mx-auto mt-10 p-6 bg-[#161b22] border border-[#f85149] rounded-lg text-center animate-fade-in">
-            <svg className="w-12 h-12 mx-auto text-[#f85149] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <p className="text-[#f85149] font-medium mb-3">{error}</p>
-            <p className="text-[#8b949e] text-sm mb-4">Попробуйте один из этих профилей:</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['octocat', 'torvalds', 'gaearon', 'sindresorhus'].map(name => (
-                <button
-                  key={name}
-                  onClick={() => { setSearchInput(name); fetchProfile(name); }}
-                  className="px-3 py-1 bg-[#21262d] border border-[#30363d] rounded-full text-[#58a6ff] text-sm hover:bg-[#30363d] transition-colors"
-                >
-                  {name}
-                </button>
-              ))}
+          <div className="side-foot">
+            <Ic name="alert-triangle" className="w-4 h-4 text-[var(--warn)] flex-shrink-0 mt-0.5" />
+            <div>
+              <b className="text-xs">Модульная версия</b>
+              <p className="text-xs mt-0.5 opacity-70">React + TypeScript + Tailwind</p>
             </div>
           </div>
-        )}
+        </aside>
 
-        {/* Profile */}
-        {user && !loading && (
-          <div className="animate-fade-in">
-            {/* Profile Card */}
-            <div className="flex flex-col md:flex-row gap-8 mb-8">
-              {/* Avatar & Info */}
-              <div className="md:w-72 flex-shrink-0">
-                <a href={user.html_url} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={user.avatar_url}
-                    alt={user.login}
-                    className="w-48 h-48 md:w-64 md:h-64 rounded-full border-2 border-[#30363d] hover:border-[#58a6ff] transition-colors mx-auto md:mx-0"
-                  />
-                </a>
-              </div>
+        {/* Content */}
+        <main className="main">
+          <div className="page">
+            {renderPage()}
+          </div>
+        </main>
+      </div>
 
-              {/* Details */}
-              <div className="flex-1">
-                <div className="mb-4">
-                  <h2 className="text-2xl font-bold text-[#c9d1d9]">
-                    {user.name || user.login}
-                  </h2>
-                  <p className="text-xl text-[#8b949e]">{user.login}</p>
-                </div>
+      {/* Modal */}
+      {modal && <Modal state={state} modal={modal} onClose={() => setModal(null)} onSave={handleSave} onDelete={handleDelete} />}
 
-                {user.bio && (
-                  <p className="text-[#c9d1d9] mb-4 text-lg">{user.bio}</p>
-                )}
-
-                <a
-                  href={user.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#21262d] border border-[#30363d] rounded-md text-[#c9d1d9] text-sm font-medium hover:bg-[#30363d] hover:border-[#8b949e] transition-colors mb-4"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-                  </svg>
-                  Открыть на GitHub
-                </a>
-
-                <div className="flex flex-wrap gap-4 mt-4 text-[#8b949e]">
-                  {user.company && (
-                    <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      {user.company}
-                    </span>
-                  )}
-                  {user.location && (
-                    <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {user.location}
-                    </span>
-                  )}
-                  {user.blog && (
-                    <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      <a href={user.blog.startsWith('http') ? user.blog : `https://${user.blog}`} target="_blank" rel="noopener noreferrer" className="text-[#58a6ff] hover:underline">
-                        {user.blog}
-                      </a>
-                    </span>
-                  )}
-                  {user.twitter_username && (
-                    <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                      </svg>
-                      <a href={`https://twitter.com/${user.twitter_username}`} target="_blank" rel="noopener noreferrer" className="text-[#58a6ff] hover:underline">
-                        @{user.twitter_username}
-                      </a>
-                    </span>
-                  )}
-                </div>
-
-                {/* Stats */}
-                <div className="flex flex-wrap gap-6 mt-6">
-                  <div className="flex items-center gap-1 text-[#8b949e]">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span className="font-semibold text-[#c9d1d9]">{user.followers}</span> followers
-                  </div>
-                  <div className="flex items-center gap-1 text-[#8b949e]">
-                    <span className="font-semibold text-[#c9d1d9]">{user.following}</span> following
-                  </div>
-                  <div className="flex items-center gap-1 text-[#8b949e]">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                    <span className="font-semibold text-[#c9d1d9]">{user.public_repos}</span> repos
-                  </div>
-                </div>
-
-                <p className="text-[#8b949e] text-sm mt-4">
-                  На GitHub с {new Date(user.created_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
+      {/* Search */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50" onClick={() => setSearchOpen(false)}>
+          <div className="w-full max-w-lg bg-[var(--surface)] rounded-xl border border-[var(--line)] shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--line)]">
+              <Ic name="search" className="w-5 h-5 text-[var(--fg-3)]" />
+              <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Поиск по объектам, актам, счетам..."
+                className="flex-1 bg-transparent outline-none text-sm" />
+              <button onClick={() => setSearchOpen(false)} className="text-[var(--fg-3)] hover:text-[var(--fg)]">
+                <Ic name="x" className="w-4 h-4" />
+              </button>
             </div>
-
-            {/* Repos Section */}
-            <div className="border-t border-[#30363d] pt-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <h3 className="text-xl font-semibold text-[#c9d1d9]">
-                  Репозитории <span className="text-[#8b949e] font-normal">({filteredRepos.length})</span>
-                </h3>
-
-                <div className="flex flex-wrap gap-2">
-                  {/* Sort */}
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'updated' | 'stars' | 'name')}
-                    className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-md text-[#c9d1d9] text-sm focus:outline-none focus:border-[#58a6ff]"
-                  >
-                    <option value="updated">По обновлению</option>
-                    <option value="stars">По звёздам</option>
-                    <option value="name">По имени</option>
-                  </select>
-
-                  {/* Language filter */}
-                  {languages.length > 0 && (
-                    <select
-                      value={filterLanguage}
-                      onChange={(e) => setFilterLanguage(e.target.value)}
-                      className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-md text-[#c9d1d9] text-sm focus:outline-none focus:border-[#58a6ff]"
-                    >
-                      <option value="all">Все языки</option>
-                      {languages.map(lang => (
-                        <option key={lang} value={lang}>{lang}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              {/* Repo List */}
-              <div className="space-y-4">
-                {filteredRepos.map((repo, index) => (
-                  <div
-                    key={repo.id}
-                    className="p-4 bg-[#161b22] border border-[#30363d] rounded-lg hover:border-[#58a6ff] transition-colors animate-fade-in"
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <a
-                            href={repo.html_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#58a6ff] font-semibold text-lg hover:underline"
-                          >
-                            {repo.name}
-                          </a>
-                          {repo.fork && (
-                            <span className="text-xs px-2 py-0.5 border border-[#30363d] rounded-full text-[#8b949e]">
-                              Fork
-                            </span>
-                          )}
-                        </div>
-
-                        {repo.description && (
-                          <p className="text-[#8b949e] mt-1 text-sm">{repo.description}</p>
-                        )}
-
-                        {repo.topics && repo.topics.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {repo.topics.map(topic => (
-                              <span
-                                key={topic}
-                                className="px-2 py-0.5 bg-[#388bfd26] text-[#58a6ff] rounded-full text-xs font-medium"
-                              >
-                                {topic}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-[#8b949e]">
-                          {repo.language && (
-                            <span className="flex items-center gap-1">
-                              <span
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: languageColors[repo.language] || '#8b949e' }}
-                              ></span>
-                              {repo.language}
-                            </span>
-                          )}
-                          {repo.stargazers_count > 0 && (
-                            <a href={`${repo.html_url}/stargazers`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#58a6ff]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                              </svg>
-                              {repo.stargazers_count}
-                            </a>
-                          )}
-                          {repo.forks_count > 0 && (
-                            <a href={`${repo.html_url}/network/members`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#58a6ff]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                              </svg>
-                              {repo.forks_count}
-                            </a>
-                          )}
-                          <span>
-                            Обновлено {formatRelativeTime(repo.updated_at)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {repo.homepage && (
-                        <a
-                          href={repo.homepage}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 px-3 py-1 border border-[#30363d] rounded-md text-[#8b949e] text-xs hover:text-[#58a6ff] hover:border-[#58a6ff] transition-colors whitespace-nowrap"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                          Демо
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredRepos.length === 0 && !loading && (
-                <div className="text-center py-12 text-[#8b949e]">
-                  <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  <p>Репозитории не найдены</p>
-                </div>
+            <div className="max-h-80 overflow-auto">
+              {searchResults.length === 0 && searchQuery && (
+                <p className="text-center py-8 text-sm text-[var(--fg-3)]">Ничего не найдено</p>
               )}
-            </div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!user && !loading && !error && (
-          <div className="text-center py-20">
-            <svg className="w-24 h-24 mx-auto text-[#30363d] mb-6" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-            </svg>
-            <h2 className="text-2xl font-semibold text-[#c9d1d9] mb-2">GitHub Profile Viewer</h2>
-            <p className="text-[#8b949e] max-w-md mx-auto mb-6">
-              Введите GitHub username в поисковую строку выше и нажмите кнопку «Найти»
-            </p>
-            <p className="text-[#8b949e] text-sm mb-3">Или попробуйте:</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['octocat', 'torvalds', 'gaearon', 'sindresorhus', 'tj'].map(name => (
-                <button
-                  key={name}
-                  onClick={() => { setSearchInput(name); fetchProfile(name); }}
-                  className="px-4 py-2 bg-[#21262d] border border-[#30363d] rounded-md text-[#58a6ff] text-sm font-medium hover:bg-[#30363d] hover:border-[#58a6ff] transition-colors"
-                >
-                  {name}
+              {searchResults.map(item => (
+                <button key={item.id} onClick={() => { setSearchOpen(false); setSearchQuery(''); if (item.type === 'obj') setPage('obj_' + item.id); }}
+                  className="w-full text-left px-4 py-3 hover:bg-[var(--surface-2)] border-b border-[var(--line)] last:border-0 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded bg-[var(--surface-2)] text-[var(--fg-2)]">{(item as any).type}</span>
+                    <span className="text-sm font-medium">{esc((item as any).name || (item as any).title || (item as any).what || (item as any).n || item.id)}</span>
+                  </div>
+                  {(item as any).client && <p className="text-xs text-[var(--fg-3)] mt-1">{esc((item as any).client)}</p>}
                 </button>
               ))}
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
 
-      {/* Footer */}
-      <footer className="border-t border-[#30363d] mt-12 py-6 text-center text-[#8b949e] text-sm">
-        <p>GitHub Profile Viewer • Использует GitHub REST API</p>
-      </footer>
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 bg-[var(--surface)] border border-[var(--line)] rounded-lg shadow-lg text-sm animate-fade-in">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+// ==================== DASHBOARD ====================
+function Dashboard({ state, stats, objs, tasks, onNavigate, onNew }: { state: AppState; stats: ReturnType<typeof getStats>; objs: Obj[]; tasks: Task[]; onNavigate: (p: string) => void; onNew: (t: string) => void }) {
+  const openTasks = tasks.filter(t => !t.done);
+  const overdue = openTasks.filter(t => t.due && t.due < TODAY);
 
-  if (diffDays === 0) return 'сегодня';
-  if (diffDays === 1) return 'вчера';
-  if (diffDays < 7) return `${diffDays} дн. назад`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} нед. назад`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} мес. назад`;
-  return `${Math.floor(diffDays / 365)} г. назад`;
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">{ZONES[state.settings.zone].t} • {ru(TODAY)}</div>
+          <h1>Главная</h1>
+        </div>
+        <div className="actions">
+          <button onClick={() => onNew('obj')} className="btn primary"><Ic name="plus" className="w-4 h-4" />Объект</button>
+          <button onClick={() => onNew('task')} className="btn"><Ic name="plus" className="w-4 h-4" />Задачу</button>
+        </div>
+      </div>
+
+      {/* KPI */}
+      <div className="grid g4">
+        <div className="card">
+          <div className="kpi">
+            <div className="label"><Ic name="building-2" className="w-4 h-4" />Объекты</div>
+            <div className="value">{stats.objects}</div>
+            <div className="delta">{rub(stats.totalEstimateSum)} сметы</div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="kpi">
+            <div className="label"><Ic name="check-square" className="w-4 h-4" />Задачи</div>
+            <div className="value">{stats.openTasks}</div>
+            <div className={`delta ${stats.overdueTasks ? 'down' : ''}`}>{stats.overdueTasks ? `${stats.overdueTasks} просрочено` : 'все в срок'}</div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="kpi">
+            <div className="label"><Ic name="file-text" className="w-4 h-4" />Договоры</div>
+            <div className="value">{stats.contracts}</div>
+            <div className="delta">{rub(stats.totalContractSum)}</div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="kpi">
+            <div className="label"><Ic name="receipt" className="w-4 h-4" />Счета</div>
+            <div className="value">{rub(stats.paidInvoiceSum)}</div>
+            <div className="delta">из {rub(stats.totalInvoiceSum)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Objects */}
+      <div className="grid g2">
+        <div className="card">
+          <div className="card-head">
+            <h2>Последние объекты</h2>
+            <button onClick={() => onNavigate('objects')} className="btn ghost text-sm">Все <Ic name="chevron-right" className="w-4 h-4" /></button>
+          </div>
+          {objs.length === 0 ? (
+            <p className="text-sm text-[var(--fg-3)]">Нет объектов. Создайте первый!</p>
+          ) : (
+            <div className="list">
+              {objs.slice(-5).reverse().map(o => (
+                <div key={o.id} className="li cursor-pointer" onClick={() => onNavigate('obj_' + o.id)}>
+                  <div className="ico"><Ic name="building-2" className="w-4 h-4" /></div>
+                  <div className="body">
+                    <div className="t">{esc(o.name)}</div>
+                    <div className="m">{esc(o.client || 'Без заказчика')}</div>
+                  </div>
+                  <div className="r">
+                    <span className={`pill ${(o as Obj).status === 'Завершён' ? 'ok' : (o as Obj).status === 'Приостановлен' ? 'warn' : 'info'}`}>{esc((o as Obj).status || 'В работе')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="card-head">
+            <h2>Задачи</h2>
+            <button onClick={() => onNavigate('tasks')} className="btn ghost text-sm">Все <Ic name="chevron-right" className="w-4 h-4" /></button>
+          </div>
+          {overdue.length > 0 && (
+            <div className="mb-3 p-3 bg-[var(--bad-soft)] rounded-lg text-sm text-[var(--bad)]">
+              <b>{overdue.length}</b> просроченных задач!
+            </div>
+          )}
+          {openTasks.length === 0 ? (
+            <p className="text-sm text-[var(--fg-3)]">Нет открытых задач</p>
+          ) : (
+            <div className="list">
+              {openTasks.slice(0, 6).map(t => (
+                <div key={t.id} className="li">
+                  <div className="ico"><Ic name="check-square" className="w-4 h-4" /></div>
+                  <div className="body">
+                    <div className="t">{esc(t.title)}</div>
+                    <div className="m">{t.due ? ru(t.due) : 'Без срока'}</div>
+                  </div>
+                  <div className="r">
+                    <span className={`pill ${t.priority === 'high' ? 'bad' : t.priority === 'medium' ? 'warn' : 'neutral'}`}>
+                      {t.priority === 'high' ? 'Высокий' : t.priority === 'medium' ? 'Средний' : 'Низкий'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
 }
 
-export default App;
+// ==================== OBJECTS PAGE ====================
+function ObjectsPage({ state, onEdit, onNew, onDelete, onOpen }: { state: AppState; onEdit: (id: string) => void; onNew: () => void; onDelete: (id: string) => void; onOpen: (id: string) => void }) {
+  const objs = getAll(state, 'obj') as Obj[];
+  return (
+    <>
+      <div className="page-head">
+        <div><h1>Объекты</h1><div className="eyebrow">{objs.length} объектов</div></div>
+        <button onClick={onNew} className="btn primary"><Ic name="plus" className="w-4 h-4" />Новый объект</button>
+      </div>
+      <div className="card">
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr><th>Наименование</th><th>Заказчик</th><th>Статус</th><th>Сумма</th><th></th></tr></thead>
+            <tbody>
+              {objs.map(o => (
+                <tr key={o.id} className="click" onClick={() => onOpen(o.id)}>
+                  <td><b>{esc(o.name)}</b>{o.city && <span className="text-[var(--fg-3)]"> • {esc(o.city)}</span>}</td>
+                  <td>{esc(o.client || '—')}</td>
+                  <td><span className={`pill ${o.status === 'Завершён' ? 'ok' : o.status === 'Приостановлен' ? 'warn' : 'info'}`}>{esc(o.status || 'В работе')}</span></td>
+                  <td className="num">{o.sum ? rub(o.sum) : '—'}</td>
+                  <td>
+                    <button onClick={e => { e.stopPropagation(); onEdit(o.id); }} className="icon-btn"><Ic name="pencil" className="w-4 h-4" /></button>
+                  </td>
+                </tr>
+              ))}
+              {objs.length === 0 && <tr><td colSpan={5} className="text-center py-8 text-[var(--fg-3)]">Нет объектов. Создайте первый!</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ==================== OBJECT CARD ====================
+function ObjectCard({ state, objId, onBack, onEdit, onNew, onDelete }: { state: AppState; objId: string; onBack: () => void; onEdit: (type: string, id: string) => void; onNew: (type: string, pre?: Record<string, any>) => void; onDelete: (id: string) => void }) {
+  const obj = state.items[objId] as Obj | undefined;
+  if (!obj) return <div className="text-center py-12 text-[var(--fg-3)]">Объект не найден</div>;
+
+  const ests = getByObj(state, 'est', objId);
+  const acts = getByObj(state, 'idact', objId);
+  const journals = getByObj(state, 'journal', objId);
+  const certs = getByObj(state, 'cert', objId) as any[];
+  const itds = getByObj(state, 'itd', objId);
+
+  return (
+    <>
+      <button onClick={onBack} className="btn ghost" style={{ paddingLeft: 0 }}><Ic name="arrow-left" className="w-4 h-4" />К списку</button>
+      <div className="page-head">
+        <div>
+          <h1>{esc(obj.name)}</h1>
+          <div className="eyebrow">{esc(obj.client || 'Без заказчика')} {obj.city && `• ${esc(obj.city)}`}</div>
+        </div>
+        <div className="actions">
+          <button onClick={() => onEdit('obj', objId)} className="btn"><Ic name="pencil" className="w-4 h-4" />Изменить</button>
+          <button onClick={() => onNew('task', { obj: objId })} className="btn primary"><Ic name="plus" className="w-4 h-4" />Добавить</button>
+        </div>
+      </div>
+
+      <div className="grid g4">
+        <div className="card"><div className="kpi"><div className="label">Сметы</div><div className="value">{ests.length}</div><div className="delta">{rub(ests.reduce((s, e) => s + num((e as any).sum), 0))}</div></div></div>
+        <div className="card"><div className="kpi"><div className="label">Акты ИД</div><div className="value">{acts.length}</div></div></div>
+        <div className="card"><div className="kpi"><div className="label">Журналы</div><div className="value">{journals.length}</div></div></div>
+        <div className="card"><div className="kpi"><div className="label">Сертификаты</div><div className="value">{certs.length}</div><div className="delta">{certs.filter(c => c.status === 'Получен').length} получено</div></div></div>
+      </div>
+
+      <div className="grid g2">
+        <div className="card">
+          <div className="card-head"><h2>Сметы</h2><button onClick={() => onNew('est', { obj: objId })} className="btn sm"><Ic name="plus" className="w-3 h-3" /></button></div>
+          {ests.length === 0 ? <p className="text-sm text-[var(--fg-3)]">Нет смет</p> : (
+            <div className="list">{ests.map(e => <div key={e.id} className="li cursor-pointer" onClick={() => onEdit('est', e.id)}><div className="body"><div className="t">{esc((e as any).section)}</div><div className="m">{ruShort((e as any).date)}</div></div><div className="r text-sm font-semibold">{rub(num((e as any).sum))}</div></div>)}</div>
+          )}
+        </div>
+        <div className="card">
+          <div className="card-head"><h2>Акты ИД</h2><button onClick={() => onNew('idact', { obj: objId })} className="btn sm"><Ic name="plus" className="w-3 h-3" /></button></div>
+          {acts.length === 0 ? <p className="text-sm text-[var(--fg-3)]">Нет актов</p> : (
+            <div className="list">{acts.slice(0, 5).map(a => <div key={a.id} className="li cursor-pointer" onClick={() => onEdit('idact', a.id)}><div className="body"><div className="t">{esc((a as any).kind)} №{esc((a as any).n)}</div><div className="m">{esc((a as any).works?.slice(0, 50))}</div></div><div className="r"><span className={`pill ${(a as any).status === 'Подписан' ? 'ok' : 'warn'}`}>{esc((a as any).status)}</span></div></div>)}</div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ==================== TASKS PAGE ====================
+function TasksPage({ state, onEdit, onNew, onToggle, onDelete }: { state: AppState; onEdit: (id: string) => void; onNew: () => void; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
+  const tasks = getAll(state, 'task') as Task[];
+  const open = tasks.filter(t => !t.done);
+  const done = tasks.filter(t => t.done);
+  const overdue = open.filter(t => t.due && t.due < TODAY);
+
+  return (
+    <>
+      <div className="page-head">
+        <div><h1>Задачи</h1><div className="eyebrow">{open.length} открытых {overdue.length > 0 && `• ${overdue.length} просрочено`}</div></div>
+        <button onClick={onNew} className="btn primary"><Ic name="plus" className="w-4 h-4" />Новая задача</button>
+      </div>
+      {overdue.length > 0 && (
+        <div className="p-3 bg-[var(--bad-soft)] border border-[var(--bad)] rounded-lg text-sm text-[var(--bad)] flex items-center gap-2">
+          <Ic name="alert-triangle" className="w-4 h-4" />
+          <b>{overdue.length}</b> просроченных задач
+        </div>
+      )}
+      <div className="card">
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr><th></th><th>Задача</th><th>Объект</th><th>Срок</th><th>Приоритет</th><th></th></tr></thead>
+            <tbody>
+              {open.map(t => (
+                <tr key={t.id} className="click">
+                  <td><button onClick={() => onToggle(t.id)} className="w-5 h-5 rounded border-2 border-[var(--fg-3)] hover:border-[var(--accent)]" /></td>
+                  <td onClick={() => onEdit(t.id)} className="cursor-pointer"><b>{esc(t.title)}</b></td>
+                  <td>{t.obj ? esc((state.items[t.obj] as Obj)?.name || '—') : '—'}</td>
+                  <td className={t.due && t.due < TODAY ? 'text-[var(--bad)] font-medium' : ''}>{t.due ? ruShort(t.due) : '—'}</td>
+                  <td><span className={`pill ${t.priority === 'high' ? 'bad' : t.priority === 'medium' ? 'warn' : 'neutral'}`}>{t.priority === 'high' ? 'Высокий' : t.priority === 'medium' ? 'Средний' : 'Низкий'}</span></td>
+                  <td><button onClick={() => onDelete(t.id)} className="icon-btn"><Ic name="trash" className="w-4 h-4" /></button></td>
+                </tr>
+              ))}
+              {open.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-[var(--fg-3)]">Нет открытых задач 🎉</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {done.length > 0 && (
+        <div className="card">
+          <div className="card-head"><h2>Выполненные</h2><span className="text-sm text-[var(--fg-3)]">{done.length}</span></div>
+          <div className="list">{done.slice(-10).reverse().map(t => (
+            <div key={t.id} className="li opacity-60">
+              <button onClick={() => onToggle(t.id)} className="w-5 h-5 rounded border-2 border-[var(--ok)] bg-[var(--ok)] text-white flex items-center justify-center"><Ic name="check" className="w-3 h-3" /></button>
+              <div className="body"><div className="t line-through">{esc(t.title)}</div></div>
+            </div>
+          ))}</div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ==================== SIMPLE LIST ====================
+function SimpleList({ state, type, title, onEdit, onNew, onDelete, onTogglePaid }: { state: AppState; type: string; title: string; onEdit: (id: string) => void; onNew: () => void; onDelete: (id: string) => void; onTogglePaid?: (id: string) => void }) {
+  const items = getAll(state, type);
+  const spec = FORM_SPECS[type];
+
+  const renderRow = (item: any) => {
+    switch (type) {
+      case 'est': return <><td><b>{esc(item.section)}</b></td><td>{esc((state.items[item.obj] as Obj)?.name || '—')}</td><td>{ruShort(item.date)}</td><td className="num">{rub(num(item.sum))}</td><td><span className={`pill ${item.status === 'Согласована' ? 'ok' : item.status === 'Замечания' ? 'warn' : 'info'}`}>{esc(item.status)}</span></td></>;
+      case 'inv': return <><td><b>№{esc(item.n)}</b></td><td>{esc(item.client || (state.items[item.obj] as Obj)?.client || '—')}</td><td className="num">{rub(num(item.sum))}</td><td>{ruShort(item.due)}</td><td>{item.paid ? <span className="pill ok">Оплачен</span> : <button onClick={() => onTogglePaid?.(item.id)} className="pill warn cursor-pointer hover:opacity-80">Оплатить</button>}</td></>;
+      case 'contract': return <><td><b>№{esc(item.n)}</b></td><td>{esc(item.client)}</td><td className="num">{item.sum ? rub(num(item.sum)) : '—'}</td><td>{ruShort(item.date)}</td><td><span className={`pill ${item.status === 'Действует' ? 'ok' : item.status === 'Исполнен' ? 'info' : 'neutral'}`}>{esc(item.status)}</span></td></>;
+      case 'act': return <><td><b>{esc(item.kind)} №{esc(item.n)}</b></td><td>{esc(item.client || '—')}</td><td className="num">{rub(num(item.sum))}</td><td><span className={`pill ${item.status === 'Подписан' ? 'ok' : item.status === 'Оплачен' ? 'info' : 'neutral'}`}>{esc(item.status)}</span></td></>;
+      case 'pur': return <><td><b>{esc(item.what)}</b></td><td>{item.qty} {item.unit}</td><td className="num">{item.price ? rub(num(item.price)) : '—'}</td><td>{esc(item.supplier || '—')}</td><td><span className={`pill ${item.status === 'Исполнена' ? 'ok' : item.status === 'Отменена' ? 'bad' : 'info'}`}>{esc(item.status)}</span></td></>;
+      case 'client': return <><td><b>{esc(item.name)}</b></td><td className="code">{esc(item.inn || '—')}</td><td>{esc(item.contact || '—')}</td><td>{esc(item.phone || '—')}</td></>;
+      case 'contractor': return <><td><b>{esc(item.name)}</b></td><td>{esc(item.speciality || '—')}</td><td>{esc(item.phone || '—')}</td><td className="num">{item.rate ? rub(num(item.rate)) + '/ч' : '—'}</td></>;
+      case 'journal': return <><td><b>{esc(JLIB[item.code]?.t || item.code)}</b></td><td>{esc((state.items[item.obj] as Obj)?.name || '—')}</td><td>{esc(item.resp)}</td><td><span className={`pill ${item.status === 'Открыт' ? 'info' : 'ok'}`}>{esc(item.status)}</span></td></>;
+      case 'cert': return <><td><b>{esc(item.material)}</b></td><td>{esc(item.doc || '—')}</td><td>{esc(item.supplier || '—')}</td><td><span className={`pill ${item.status === 'Получен' ? 'ok' : item.status === 'Просрочен' ? 'bad' : 'warn'}`}>{esc(item.status)}</span></td></>;
+      case 'itd': return <><td><b>{esc(ITD_LIB[item.code]?.t || item.code)}</b></td><td>{esc((state.items[item.obj] as Obj)?.name || '—')}</td><td>{item.done}/{item.need || '—'}</td><td><div className="bar"><i style={{ width: pct(item.done, item.need || 1) }} /></div></td></>;
+      case 'pd': return <><td><b>{esc(item.code)}</b></td><td>{esc(item.title)}</td><td>{esc((state.items[item.obj] as Obj)?.name || '—')}</td><td><span className={`pill ${item.status === 'Согласован' ? 'ok' : item.status === 'Замечания' ? 'warn' : 'info'}`}>{esc(item.status)}</span></td></>;
+      default: return <td colSpan={5}>{esc(JSON.stringify(item).slice(0, 100))}</td>;
+    }
+  };
+
+  return (
+    <>
+      <div className="page-head">
+        <div><h1>{title}</h1><div className="eyebrow">{items.length} записей</div></div>
+        <button onClick={onNew} className="btn primary"><Ic name="plus" className="w-4 h-4" />Добавить</button>
+      </div>
+      <div className="card">
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr>{getHeaders(type).map(h => <th key={h}>{h}</th>)}<th></th></tr></thead>
+            <tbody>
+              {items.map(item => (
+                <tr key={item.id} className="click" onClick={() => onEdit(item.id)}>
+                  {renderRow(item)}
+                  <td><button onClick={e => { e.stopPropagation(); onDelete(item.id); }} className="icon-btn"><Ic name="trash" className="w-4 h-4" /></button></td>
+                </tr>
+              ))}
+              {items.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-[var(--fg-3)]">Нет записей. Добавьте первую!</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function getHeaders(type: string): string[] {
+  switch (type) {
+    case 'est': return ['Раздел', 'Объект', 'Дата', 'Сумма', 'Статус'];
+    case 'inv': return ['Номер', 'Покупатель', 'Сумма', 'Срок', 'Оплата'];
+    case 'contract': return ['Номер', 'Контрагент', 'Сумма', 'Дата', 'Статус'];
+    case 'act': return ['Вид', 'Заказчик', 'Сумма', 'Статус'];
+    case 'pur': return ['Наименование', 'Кол-во', 'Цена', 'Поставщик', 'Статус'];
+    case 'client': return ['Наименование', 'ИНН', 'Контакт', 'Телефон'];
+    case 'contractor': return ['Имя', 'Специализация', 'Телефон', 'Ставка'];
+    case 'journal': return ['Тип', 'Объект', 'Ответственный', 'Статус'];
+    case 'cert': return ['Материал', 'Документ', 'Поставщик', 'Статус'];
+    case 'itd': return ['Вид работ', 'Объект', 'Готово', 'Прогресс'];
+    case 'pd': return ['Шифр', 'Наименование', 'Объект', 'Статус'];
+    default: return ['Данные'];
+  }
+}
+
+// ==================== BANK PAGE ====================
+function BankPage({ state, onEdit, onNew, onDelete }: { state: AppState; onEdit: (id: string) => void; onNew: (t?: string) => void; onDelete: (id: string) => void }) {
+  const accounts = getAll(state, 'bank');
+  const ops = getAll(state, 'bankop');
+
+  return (
+    <>
+      <div className="page-head">
+        <div><h1>Банк</h1></div>
+        <div className="actions">
+          <button onClick={() => onNew('bankop')} className="btn"><Ic name="plus" className="w-4 h-4" />Операцию</button>
+          <button onClick={() => onNew('bank')} className="btn primary"><Ic name="plus" className="w-4 h-4" />Счёт</button>
+        </div>
+      </div>
+      <div className="grid g2">
+        {accounts.map(a => {
+          const aOps = ops.filter(o => (o as any).account === a.id);
+          const balance = num((a as any).balance) + aOps.reduce((s, o) => s + num((o as any).income) - num((o as any).expense), 0);
+          return (
+            <div key={a.id} className="card">
+              <div className="card-head"><h2>{esc((a as any).name)}</h2><button onClick={() => onEdit(a.id)} className="icon-btn"><Ic name="pencil" className="w-4 h-4" /></button></div>
+              <div className="kpi"><div className="label">Остаток</div><div className="value">{rub(balance)}</div><div className="delta">{esc((a as any).bank)} • {esc((a as any).rs)}</div></div>
+            </div>
+          );
+        })}
+        {accounts.length === 0 && <div className="card col-span-2"><p className="text-[var(--fg-3)]">Добавьте расчётный счёт</p></div>}
+      </div>
+      {ops.length > 0 && (
+        <div className="card">
+          <div className="card-head"><h2>Последние операции</h2></div>
+          <div className="tbl-wrap"><table><thead><tr><th>Дата</th><th>Контрагент</th><th>Назначение</th><th>Приход</th><th>Расход</th><th></th></tr></thead>
+            <tbody>{ops.sort((a, b) => String((b as any).date).localeCompare(String((a as any).date))).slice(0, 20).map(o => (
+              <tr key={o.id} className="click" onClick={() => onEdit(o.id)}>
+                <td>{ruShort((o as any).date)}</td><td>{esc((o as any).contragent)}</td><td className="text-sm">{esc((o as any).purpose)}</td>
+                <td className="num text-[var(--ok)]">{num((o as any).income) ? rub(num((o as any).income)) : ''}</td>
+                <td className="num text-[var(--bad)]">{num((o as any).expense) ? rub(num((o as any).expense)) : ''}</td>
+                <td><button onClick={e => { e.stopPropagation(); onDelete(o.id); }} className="icon-btn"><Ic name="trash" className="w-4 h-4" /></button></td>
+              </tr>
+            ))}</tbody></table></div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ==================== SETTINGS PAGE ====================
+function SettingsPage({ state, onUpdate, onExport, onImport, onClear, showToast }: { state: AppState; onUpdate: (s: Partial<any>) => void; onExport: () => void; onImport: (f: File) => Promise<void>; onClear: () => void; showToast: (m: string) => void }) {
+  const s = state.settings;
+  return (
+    <>
+      <div className="page-head"><div><h1>Настройки</h1></div></div>
+      <div className="grid g2">
+        <div className="card">
+          <div className="card-head"><h2>Реквизиты</h2></div>
+          <div className="space-y-3">
+            {[['company', 'Организация'], ['inn', 'ИНН'], ['kpp', 'КПП'], ['address', 'Адрес'], ['phone', 'Телефон'], ['director', 'Руководитель']].map(([k, l]) => (
+              <div key={k}><label className="text-xs text-[var(--fg-2)] block mb-1">{l}</label><input value={(s as any)[k] || ''} onChange={e => onUpdate({ [k]: e.target.value })} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" /></div>
+            ))}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-head"><h2>Банковские реквизиты</h2></div>
+          <div className="space-y-3">
+            {[['bank', 'Банк'], ['rs', 'Расчётный счёт'], ['ks', 'Корр. счёт'], ['bik', 'БИК'], ['nds', 'НДС']].map(([k, l]) => (
+              <div key={k}><label className="text-xs text-[var(--fg-2)] block mb-1">{l}</label><input value={(s as any)[k] || ''} onChange={e => onUpdate({ [k]: e.target.value })} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" /></div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-head"><h2>Данные</h2></div>
+        <div className="flex flex-wrap gap-3">
+          <button onClick={onExport} className="btn"><Ic name="download" className="w-4 h-4" />Скачать копию</button>
+          <label className="btn cursor-pointer"><Ic name="upload" className="w-4 h-4" />Загрузить<input type="file" accept=".json" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) { await onImport(f); showToast('Данные загружены'); } }} /></label>
+          <button onClick={onClear} className="btn text-[var(--bad)]"><Ic name="trash" className="w-4 h-4" />Удалить все данные</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ==================== MODAL ====================
+function Modal({ state, modal, onClose, onSave, onDelete }: { state: AppState; modal: { type: string; id?: string; pre?: Record<string, any> }; onClose: () => void; onSave: (type: string, values: Record<string, any>, id?: string) => void; onDelete: (id: string) => void }) {
+  const spec = FORM_SPECS[modal.type];
+  if (!spec) return null;
+  const existing = modal.id ? state.items[modal.id] : null;
+  const [values, setValues] = useState<Record<string, any>>(() => {
+    if (existing) return { ...existing };
+    if (modal.pre) return { ...modal.pre };
+    return {};
+  });
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const miss = spec.fields.filter(f => f.req && (!values[f.k] || (Array.isArray(values[f.k]) && values[f.k].length === 0)));
+    if (miss.length) { setError('Заполните: ' + miss.map(f => f.l).join(', ')); return; }
+    onSave(modal.type, values, modal.id);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg bg-[var(--surface)] rounded-xl border border-[var(--line)] shadow-xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--line)]">
+          <h2 className="font-semibold">{modal.id ? 'Изменить' : 'Новый'} {spec.n}</h2>
+          <button onClick={onClose} className="icon-btn"><Ic name="x" className="w-4 h-4" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {error && <div className="p-3 bg-[var(--bad-soft)] text-[var(--bad)] text-sm rounded-lg">{error}</div>}
+          {spec.fields.map(f => {
+            if (f.t === 'h') return null;
+            const val = values[f.k] ?? '';
+            return (
+              <div key={f.k}>
+                <label className="text-xs text-[var(--fg-2)] block mb-1">{f.l}{f.req && ' *'}</label>
+                {f.t === 'text' && <input value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" />}
+                {f.t === 'number' && <input type="number" value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" />}
+                {f.t === 'date' && <input type="date" value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" />}
+                {f.t === 'url' && <input type="url" value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" />}
+                {f.t === 'textarea' && <textarea value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm" />}
+                {f.t === 'select' && <select value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm">{f.opts.map((o: string) => <option key={o} value={o}>{o}</option>)}</select>}
+                {f.t === 'checks' && <div className="flex flex-wrap gap-2">{f.opts.map((o: string) => <label key={o} className="flex items-center gap-1.5 text-sm"><input type="checkbox" value={o} checked={(val || []).includes(o)} onChange={e => { const arr = val || []; setValues(v => ({ ...v, [f.k]: e.target.checked ? [...arr, o] : arr.filter((x: string) => x !== o) })); }} />{o}</label>)}</div>}
+                {f.t === 'obj' && <select value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm"><option value="">—</option>{(getAll(state, 'obj') as Obj[]).map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>}
+                {f.t === 'bank' && <select value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm"><option value="">—</option>{getAll(state, 'bank').map(b => <option key={b.id} value={b.id}>{(b as any).name}</option>)}</select>}
+                {f.t === 'journal' && <select value={val} onChange={e => setValues(v => ({ ...v, [f.k]: e.target.value }))} className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-md text-sm"><option value="">—</option>{getAll(state, 'journal').filter(j => (j as any).obj === values.obj).map(j => <option key={j.id} value={(j as any).code}>{JLIB[(j as any).code]?.t || (j as any).code}</option>)}</select>}
+              </div>
+            );
+          })}
+          <div className="flex justify-between pt-2">
+            {modal.id ? <button type="button" onClick={() => onDelete(modal.id!)} className="btn text-[var(--bad)]"><Ic name="trash" className="w-4 h-4" />Удалить</button> : <div />}
+            <button type="submit" className="btn primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
