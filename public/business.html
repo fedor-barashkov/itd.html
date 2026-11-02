@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Бизнес — Договоры, счета, банк</title>
+<style>
+:root{--bg:#202020;--surface:#2b2b2b;--surface-2:#323232;--side:#1c1c1c;--line:#3b3b3b;--fg:#f3f3f3;--fg-2:#c8c8c8;--fg-3:#9a9a9a;--accent:#60cdff;--accent-fg:#00283d;--accent-soft:#1d3747;--ok:#7fd572;--ok-soft:#1e3320;--warn:#ffd75e;--warn-soft:#3a3212;--bad:#ff9aa4;--bad-soft:#47272a;--r:8px;--r-sm:4px;--shadow:none;--font:"Segoe UI",system-ui,sans-serif}
+@media(prefers-color-scheme:light){:root{--bg:#f3f3f3;--surface:#fff;--surface-2:#f7f7f7;--side:#ebebeb;--line:#e1e1e1;--fg:#1b1b1b;--fg-2:#5d5d5d;--fg-3:#8a8a8a;--accent:#005fb8;--accent-fg:#fff;--accent-soft:#e3eefa;--ok:#0f7b0f;--ok-soft:#e3f2e3;--warn:#8a5300;--warn-soft:#fff1c7;--bad:#c42b1c;--bad-soft:#fde7e9;--shadow:0 1px 3px rgba(0,0,0,.08)}}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--font);height:100vh;display:grid;grid-template-rows:auto 1fr;overflow:hidden}button,input,select,textarea{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--side);border-bottom:1px solid var(--line);min-height:48px}
+.logo{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-size:10px;font-weight:700}h1{font-size:18px;font-weight:600}
+.main{display:grid;grid-template-columns:220px 1fr;overflow:hidden}
+nav{background:var(--side);border-right:1px solid var(--line);padding:12px 8px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+nav button{display:flex;align-items:center;gap:8px;padding:8px 12px;border:0;background:0;border-radius:var(--r);cursor:pointer;color:var(--fg-2);text-align:left;width:100%;font-size:13px;position:relative}
+nav button:hover{background:var(--surface-2);color:var(--fg)}
+nav button.active{background:var(--surface);color:var(--fg);font-weight:600}
+nav button.active::before{content:"";width:3px;height:60%;border-radius:3px;background:var(--accent);position:absolute;left:0}
+.content{overflow:auto;padding:24px}.page{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.main{grid-template-columns:1fr}nav{display:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.card-head h2{font-size:15px;font-weight:600}
+.kpi{display:flex;flex-direction:column;gap:4px}.kpi .label{font-size:12px;color:var(--fg-2)}.kpi .value{font-size:22px;font-weight:700}.kpi .delta{font-size:12px;color:var(--fg-3)}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;font-weight:600;color:var(--fg-3);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}td{padding:9px 10px;border-bottom:1px solid var(--line)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--surface-2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);cursor:pointer;font-size:13px}.btn:hover{border-color:var(--fg-3)}.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}.btn.sm{padding:4px 10px;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:99px;font-weight:600}.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.info{background:var(--accent-soft);color:var(--accent)}.pill.neutral{background:var(--surface-2);color:var(--fg-2)}
+.list{display:flex;flex-direction:column}.li{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}.li:last-child{border:0}.li .body{flex:1;min-width:0}.li .t{font-weight:600;font-size:13px}.li .m{font-size:12px;color:var(--fg-3)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:100%;max-width:500px;max-height:90vh;overflow:auto}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:12px}.modal-body label{font-size:12px;color:var(--fg-2);display:block;margin-bottom:4px}
+.modal-body input,.modal-body select,.modal-body textarea{width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px}
+.modal-body textarea{resize:vertical;min-height:60px}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.eyebrow{font-size:12px;color:var(--fg-3);margin-bottom:2px}.empty{text-align:center;padding:40px;color:var(--fg-3)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">БЗ</div>
+  <h1>Бизнес — договоры, счета, банк</h1>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn sm" onclick="exportData()">💾 Экспорт</button>
+    <button class="btn sm" onclick="document.getElementById('imp').click()">📂 Импорт</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+<div class="main">
+  <nav id="nav"></nav>
+  <div class="content"><div class="page" id="page"></div></div>
+</div>
+<div id="modal-root"></div>
+
+<script>
+const KEY='business-panel-v1';
+const TODAY=new Date().toISOString().slice(0,10);
+const $=s=>document.querySelector(s);
+const esc=s=>s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; 
+const rub=n=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:0}).format(n||0);
+const ru=iso=>{if(!iso)return'';const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];const[y,mo,d]=iso.split('-');return`${+d} ${m[+mo-1]} ${y}`};
+const ruShort=iso=>{if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}.${m}.${y}`};
+const newId=t=>t+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+
+const STATUS_CONTRACT=['Проект','Действует','Исполнен','Расторгнут'];
+const STATUS_INV=['Выставлен','Оплачен','Просрочен'];
+const STATUS_ACT=['Проект','Подписан','Оплачен'];
+const STATUS_PUR=['Черновик','Отправлена','Подтверждена','Исполнена','Отменена'];
+
+let state={objects:{},contracts:{},invoices:{},acts:{},bank:{},bankops:{},purchases:{},clients:{},contractors:{},settings:{}};
+let currentPage='dashboard';
+
+function load(){try{const d=localStorage.getItem(KEY);if(d)state=JSON.parse(d)}catch{}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function all(col){return Object.values(state[col]||{})}
+function nextN(col){const ns=all(col).map(x=>parseInt(x.n)||0);return String((ns.length?Math.max(...ns):0)+1)}
+
+function exportData(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`business-backup-${TODAY}.json`;a.click()}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();render();alert('Данные загружены')}catch{alert('Ошибка файла')}};r.readAsText(f)}
+
+const NAV=[
+  {id:'dashboard',label:'📊 Главная'},
+  {id:'contracts',label:'📄 Договоры'},
+  {id:'invoices',label:'🧾 Счета'},
+  {id:'acts',label:'✅ Акты'},
+  {id:'bank',label:'🏦 Банк'},
+  {id:'purchases',label:'🛒 Закупки'},
+  {id:'clients',label:'👥 Заказчики'},
+  {id:'contractors',label:'👷 Исполнители'},
+  {id:'settings',label:'⚙️ Настройки'},
+];
+
+function renderNav(){$('#nav').innerHTML=NAV.map(n=>`<button class="${currentPage===n.id?'active':''}" onclick="go('${n.id}')">${n.label}</button>`).join('')}
+function go(page){currentPage=page;render()}
+
+function render(){
+  renderNav();
+  const p=$('#page');
+  switch(currentPage){
+    case'dashboard':p.innerHTML=renderDashboard();break;
+    case'contracts':p.innerHTML=renderContracts();break;
+    case'invoices':p.innerHTML=renderInvoices();break;
+    case'acts':p.innerHTML=renderActs();break;
+    case'bank':p.innerHTML=renderBank();break;
+    case'purchases':p.innerHTML=renderPurchases();break;
+    case'clients':p.innerHTML=renderClients();break;
+    case'contractors':p.innerHTML=renderContractors();break;
+    case'settings':p.innerHTML=renderSettings();break;
+  }
+}
+
+function renderDashboard(){
+  const contracts=all('contracts'),invs=all('invoices'),acts=all('acts'),banks=all('bank'),ops=all('bankops'),purs=all('purchases');
+  const totalContracts=contracts.reduce((s,c)=>s+(+c.sum||0),0);
+  const totalInvs=invs.reduce((s,i)=>s+(+i.sum||0),0);
+  const paidInvs=invs.filter(i=>i.status==='Оплачен').reduce((s,i)=>s+(+i.sum||0),0);
+  const balance=banks.reduce((s,b)=>{const bOps=ops.filter(o=>o.account===b.id);return s+(+b.balance||0)+bOps.reduce((a,o)=>a+(+o.income||0)-(+o.expense||0),0)},0);
+  const overdue=invs.filter(i=>i.status!=='Оплачен'&&i.due&&i.due<TODAY).length;
+  return`
+    <div class="eyebrow">Бизнес • ${ru(TODAY)}</div>
+    <h1>Главная</h1>
+    ${overdue>0?`<div style="padding:12px 16px;background:var(--bad-soft);border:1px solid var(--bad);border-radius:var(--r);color:var(--bad);font-size:13px">⚠️ <b>${overdue}</b> просроченных счетов!</div>`:''}
+    <div class="grid g4">
+      <div class="card"><div class="kpi"><div class="label">Договоры</div><div class="value">${contracts.length}</div><div class="delta">${rub(totalContracts)}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Счета</div><div class="value">${rub(paidInvs)}</div><div class="delta">из ${rub(totalInvs)} выставлено</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Баланс</div><div class="value">${rub(balance)}</div><div class="delta">${banks.length} счетов</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Закупки</div><div class="value">${purs.length}</div><div class="delta">${purs.filter(p=>p.status==='Исполнена').length} исполнено</div></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><div class="card-head"><h2>Последние счета</h2><button class="btn sm" onclick="go('invoices')">Все →</button></div>
+        ${invs.length?`<div class="list">${invs.slice(-5).reverse().map(i=>`<div class="li" style="cursor:pointer" onclick="editInvoice('${i.id}')"><div class="body"><div class="t">Счёт №${esc(i.n)}</div><div class="m">${esc(i.client||'—')} • до ${ruShort(i.due)}</div></div><div style="text-align:right"><div style="font-weight:600">${rub(+i.sum)}</div><span class="pill ${i.status==='Оплачен'?'ok':i.status==='Просрочен'?'bad':'warn'}">${esc(i.status)}</span></div></div>`).join('')}</div>`:'<div class="empty">Нет счетов</div>'}
+      </div>
+      <div class="card"><div class="card-head"><h2>Договоры</h2><button class="btn sm" onclick="go('contracts')">Все →</button></div>
+        ${contracts.length?`<div class="list">${contracts.slice(-5).reverse().map(c=>`<div class="li" style="cursor:pointer" onclick="editContract('${c.id}')"><div class="body"><div class="t">Договор №${esc(c.n)}</div><div class="m">${esc(c.client)} • ${ruShort(c.date)}</div></div><div style="text-align:right"><div style="font-weight:600">${rub(+c.sum)}</div><span class="pill ${c.status==='Действует'?'ok':c.status==='Исполнен'?'info':'neutral'}">${esc(c.status)}</span></div></div>`).join('')}</div>`:'<div class="empty">Нет договоров</div>'}
+      </div>
+    </div>`;
+}
+
+function renderContracts(){
+  const cs=all('contracts');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Договоры</h1><div class="eyebrow">${cs.length} договоров • ${rub(cs.reduce((s,c)=>s+(+c.sum||0),0))}</div></div><button class="btn primary" onclick="editContract()">+ Новый договор</button></div>
+    <div class="card"><table><thead><tr><th>№</th><th>Дата</th><th>Контрагент</th><th>Предмет</th><th>Сумма</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>`<tr class="click" onclick="editContract('${c.id}')"><td><b>№${esc(c.n)}</b></td><td>${ruShort(c.date)}</td><td>${esc(c.client)}</td><td>${esc(c.subject?.slice(0,40)||'—')}</td><td class="num"><b>${rub(+c.sum)}</b></td><td><span class="pill ${c.status==='Действует'?'ok':c.status==='Исполнен'?'info':c.status==='Расторгнут'?'bad':'neutral'}">${esc(c.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('contracts','${c.id}')">🗑️</button></td></tr>`).join('')}
+    ${cs.length?'':'<tr><td colspan="7" class="empty">Нет договоров</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderInvoices(){
+  const invs=all('invoices');
+  const total=invs.reduce((s,i)=>s+(+i.sum||0),0);
+  const paid=invs.filter(i=>i.status==='Оплачен').reduce((s,i)=>s+(+i.sum||0),0);
+  const overdue=invs.filter(i=>i.status!=='Оплачен'&&i.due&&i.due<TODAY);
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Счета</h1><div class="eyebrow">${invs.length} счетов • Оплачено: ${rub(paid)} из ${rub(total)}</div></div><button class="btn primary" onclick="editInvoice()">+ Новый счёт</button></div>
+    ${overdue.length?`<div style="padding:10px 14px;background:var(--bad-soft);border-radius:var(--r);color:var(--bad);font-size:13px">⚠️ ${overdue.length} просроченных счетов</div>`:''}
+    <div class="card"><table><thead><tr><th>№</th><th>Покупатель</th><th>Сумма</th><th>Выставлен</th><th>Оплатить до</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${invs.map(i=>`<tr class="click" onclick="editInvoice('${i.id}')"><td><b>№${esc(i.n)}</b></td><td>${esc(i.client||'—')}</td><td class="num"><b>${rub(+i.sum)}</b></td><td>${ruShort(i.date)}</td><td>${ruShort(i.due)}</td><td>${i.status==='Оплачен'?'<span class="pill ok">Оплачен</span>':i.due&&i.due<TODAY?'<span class="pill bad">Просрочен</span>':'<button class="pill warn" style="cursor:pointer;border:0" onclick="event.stopPropagation();togglePaid(\''+i.id+'\')">Оплатить</button>'}</td><td><button class="btn sm" onclick="event.stopPropagation();delItem('invoices','${i.id}')">🗑️</button></td></tr>`).join('')}
+    ${invs.length?'':'<tr><td colspan="7" class="empty">Нет счетов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderActs(){
+  const acts=all('acts');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Акты</h1><div class="eyebrow">${acts.length} актов • ${rub(acts.reduce((s,a)=>s+(+a.sum||0),0))}</div></div><button class="btn primary" onclick="editAct()">+ Новый акт</button></div>
+    <div class="card"><table><thead><tr><th>№</th><th>Вид</th><th>Заказчик</th><th>Сумма</th><th>Дата</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${acts.map(a=>`<tr class="click" onclick="editAct('${a.id}')"><td><b>№${esc(a.n)}</b></td><td>${esc(a.kind)}</td><td>${esc(a.client||'—')}</td><td class="num"><b>${rub(+a.sum)}</b></td><td>${ruShort(a.date)}</td><td><span class="pill ${a.status==='Подписан'||a.status==='Оплачен'?'ok':'neutral'}">${esc(a.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('acts','${a.id}')">🗑️</button></td></tr>`).join('')}
+    ${acts.length?'':'<tr><td colspan="7" class="empty">Нет актов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderBank(){
+  const banks=all('bank'),ops=all('bankops');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Банк</h1></div><div style="display:flex;gap:8px"><button class="btn" onclick="editBankOp()">+ Операцию</button><button class="btn primary" onclick="editBank()">+ Счёт</button></div></div>
+    <div class="grid g2">${banks.map(b=>{const bOps=ops.filter(o=>o.account===b.id);const bal=(+b.balance||0)+bOps.reduce((a,o)=>a+(+o.income||0)-(+o.expense||0),0);return`<div class="card"><div class="card-head"><h2>${esc(b.name)}</h2><button class="btn sm" onclick="editBank('${b.id}')">✏️</button></div><div class="kpi"><div class="label">Остаток</div><div class="value">${rub(bal)}</div><div class="delta">${esc(b.bank)} • р/с ${esc(b.rs)}</div></div></div>`}).join('')}${banks.length?'':'<div class="card empty">Добавьте расчётный счёт</div>'}</div>
+    ${ops.length?`<div class="card"><div class="card-head"><h2>Операции</h2></div><table><thead><tr><th>Дата</th><th>Контрагент</th><th>Назначение</th><th>Приход</th><th>Расход</th><th></th></tr></thead><tbody>
+    ${ops.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20).map(o=>`<tr class="click" onclick="editBankOp('${o.id}')"><td>${ruShort(o.date)}</td><td>${esc(o.contragent)}</td><td class="small">${esc(o.purpose?.slice(0,40))}</td><td class="num" style="color:var(--ok)">${+o.income?rub(+o.income):''}</td><td class="num" style="color:var(--bad)">${+o.expense?rub(+o.expense):''}</td><td><button class="btn sm" onclick="event.stopPropagation();delItem('bankops','${o.id}')">🗑️</button></td></tr>`).join('')}
+    </tbody></table></div>`:''}`;
+}
+
+function renderPurchases(){
+  const purs=all('purchases');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Закупки</h1><div class="eyebrow">${purs.length} заявок</div></div><button class="btn primary" onclick="editPurchase()">+ Новая заявка</button></div>
+    <div class="card"><table><thead><tr><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Поставщик</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${purs.map(p=>`<tr class="click" onclick="editPurchase('${p.id}')"><td><b>${esc(p.what)}</b></td><td>${p.qty} ${esc(p.unit||'')}</td><td class="num">${p.price?rub(+p.price):'—'}</td><td class="num"><b>${rub((+p.qty||0)*(+p.price||0))}</b></td><td>${esc(p.supplier||'—')}</td><td><span class="pill ${p.status==='Исполнена'?'ok':p.status==='Отменена'?'bad':'info'}">${esc(p.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('purchases','${p.id}')">🗑️</button></td></tr>`).join('')}
+    ${purs.length?'':'<tr><td colspan="7" class="empty">Нет заявок</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderClients(){
+  const cs=all('clients');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Заказчики</h1><div class="eyebrow">${cs.length} заказчиков</div></div><button class="btn primary" onclick="editClient()">+ Новый заказчик</button></div>
+    <div class="card"><table><thead><tr><th>Наименование</th><th>ИНН</th><th>Контакт</th><th>Телефон</th><th>Email</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>`<tr class="click" onclick="editClient('${c.id}')"><td><b>${esc(c.name)}</b></td><td style="font-family:monospace">${esc(c.inn||'—')}</td><td>${esc(c.contact||'—')}</td><td>${esc(c.phone||'—')}</td><td>${esc(c.email||'—')}</td><td><button class="btn sm" onclick="event.stopPropagation();delItem('clients','${c.id}')">🗑️</button></td></tr>`).join('')}
+    ${cs.length?'':'<tr><td colspan="6" class="empty">Нет заказчиков</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderContractors(){
+  const cs=all('contractors');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Исполнители</h1><div class="eyebrow">${cs.length} исполнителей</div></div><button class="btn primary" onclick="editContractor()">+ Новый исполнитель</button></div>
+    <div class="card"><table><thead><tr><th>Имя</th><th>Специализация</th><th>Телефон</th><th>Ставка</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>`<tr class="click" onclick="editContractor('${c.id}')"><td><b>${esc(c.name)}</b></td><td>${esc(c.speciality||'—')}</td><td>${esc(c.phone||'—')}</td><td class="num">${c.rate?rub(+c.rate)+'/ч':'—'}</td><td><button class="btn sm" onclick="event.stopPropagation();delItem('contractors','${c.id}')">🗑️</button></td></tr>`).join('')}
+    ${cs.length?'':'<tr><td colspan="5" class="empty">Нет исполнителей</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderSettings(){
+  const s=state.settings||{};
+  return`<h1>Настройки</h1>
+    <div class="grid g2">
+      <div class="card"><div class="card-head"><h2>Реквизиты</h2></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${[['company','Организация'],['inn','ИНН'],['kpp','КПП'],['address','Адрес'],['phone','Телефон'],['director','Руководитель']].map(([k,l])=>`<div><label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:4px">${l}</label><input id="s_${k}" value="${esc(s[k]||'')}" onchange="updSettings('${k}',this.value)" style="width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px"></div>`).join('')}
+        </div>
+      </div>
+      <div class="card"><div class="card-head"><h2>Банковские реквизиты</h2></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${[['bank','Банк'],['rs','Расчётный счёт'],['ks','Корр. счёт'],['bik','БИК'],['nds','НДС']].map(([k,l])=>`<div><label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:4px">${l}</label><input id="s_${k}" value="${esc(s[k]||'')}" onchange="updSettings('${k}',this.value)" style="width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card"><div class="card-head"><h2>Данные</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="exportData()">💾 Скачать копию</button>
+        <button class="btn" onclick="document.getElementById('imp2').click()">📂 Загрузить<input type="file" id="imp2" accept=".json" style="display:none" onchange="importData(event)"></button>
+        <button class="btn" style="color:var(--bad)" onclick="if(confirm('Удалить ВСЕ данные?')){state={objects:{},contracts:{},invoices:{},acts:{},bank:{},bankops:{},purchases:{},clients:{},contractors:{},settings:{}};save();render()}">🗑️ Удалить всё</button>
+      </div>
+    </div>`;
+}
+
+function updSettings(k,v){state.settings=state.settings||{};state.settings[k]=v;save()}
+
+// MODALS
+function showModal(title,fields,data,onSave){
+  const vals={...data};
+  const html=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h2>${title}</h2><button class="btn sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">${fields.map(f=>{
+      if(f.type==='select')return`<div><label>${f.label}</label><select id="mf_${f.key}">${(f.options||[]).map(o=>`<option value="${o}"${vals[f.key]===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+      if(f.type==='textarea')return`<div><label>${f.label}</label><textarea id="mf_${f.key}" rows="3">${esc(vals[f.key]||'')}</textarea></div>`;
+      return`<div><label>${f.label}</label><input id="mf_${f.key}" type="${f.type||'text'}" value="${esc(vals[f.key]||'')}"></div>`;
+    }).join('')}</div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Отмена</button><button class="btn primary" id="modalSave">Сохранить</button></div>
+  </div></div>`;
+  $('#modal-root').innerHTML=html;
+  $('#modalSave').onclick=()=>{fields.forEach(f=>{vals[f.key]=document.getElementById('mf_'+f.key).value});onSave(vals);closeModal()};
+}
+function closeModal(){$('#modal-root').innerHTML=''}
+
+function editContract(id){
+  const c=id?state.contracts[id]:{status:'Проект',date:TODAY};
+  showModal(id?'Изменить договор':'Новый договор',[
+    {key:'n',label:'Номер *'},
+    {key:'date',label:'Дата *',type:'date'},
+    {key:'client',label:'Контрагент *'},
+    {key:'subject',label:'Предмет договора',type:'textarea'},
+    {key:'sum',label:'Сумма, ₽',type:'number'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_CONTRACT},
+  ],c,v=>{const nid=id||newId('ctr');state.contracts[nid]={...v,id:nid};save();render()});
+}
+
+function editInvoice(id){
+  const i=id?state.invoices[id]:{date:TODAY,status:'Выставлен'};
+  showModal(id?'Изменить счёт':'Новый счёт',[
+    {key:'client',label:'Покупатель'},
+    {key:'what',label:'Наименование услуг *'},
+    {key:'sum',label:'Сумма, ₽ *',type:'number'},
+    {key:'date',label:'Дата',type:'date'},
+    {key:'due',label:'Оплатить до *',type:'date'},
+  ],i,v=>{if(!v.n)v.n=nextN('invoices');const nid=id||newId('inv');state.invoices[nid]={...v,id:nid,status:i.status||'Выставлен'};save();render()});
+}
+
+function editAct(id){
+  const a=id?state.acts[id]:{date:TODAY,status:'Проект',kind:'Акт сдачи-приёмки'};
+  showModal(id?'Изменить акт':'Новый акт',[
+    {key:'client',label:'Заказчик'},
+    {key:'kind',label:'Вид',type:'select',options:['Акт сдачи-приёмки','КС-2 / КС-3']},
+    {key:'stage',label:'Этап / работы *',type:'textarea'},
+    {key:'sum',label:'Сумма, ₽ *',type:'number'},
+    {key:'date',label:'Дата',type:'date'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_ACT},
+  ],a,v=>{if(!v.n)v.n=nextN('acts');const nid=id||newId('act');state.acts[nid]={...v,id:nid};save();render()});
+}
+
+function editBank(id){
+  const b=id?state.bank[id]:{balance:0};
+  showModal(id?'Изменить счёт':'Новый расчётный счёт',[
+    {key:'name',label:'Название *'},
+    {key:'bank',label:'Банк *'},
+    {key:'rs',label:'Расчётный счёт *'},
+    {key:'ks',label:'Корр. счёт *'},
+    {key:'bik',label:'БИК *'},
+    {key:'balance',label:'Остаток, ₽',type:'number'},
+  ],b,v=>{const nid=id||newId('bank');state.bank[nid]={...v,id:nid};save();render()});
+}
+
+function editBankOp(id){
+  const o=id?state.bankops[id]:{date:TODAY,income:0,expense:0};
+  const bankOpts=all('bank').map(b=>`<option value="${b.id}"${o.account===b.id?' selected':''}>${esc(b.name)}</option>`).join('');
+  showModal(id?'Изменить операцию':'Новая операция',[
+    {key:'account',label:'Счёт *',type:'select',options:all('bank').map(b=>b.id)},
+    {key:'date',label:'Дата *',type:'date'},
+    {key:'contragent',label:'Контрагент *'},
+    {key:'purpose',label:'Назначение платежа'},
+    {key:'income',label:'Приход, ₽',type:'number'},
+    {key:'expense',label:'Расход, ₽',type:'number'},
+  ],o,v=>{const nid=id||newId('bop');state.bankops[nid]={...v,id:nid};save();render()});
+  setTimeout(()=>{const sel=document.getElementById('mf_account');if(sel)sel.innerHTML='<option value="">—</option>'+bankOpts},0);
+}
+
+function editPurchase(id){
+  const p=id?state.purchases[id]:{status:'Черновик',qty:1,unit:'шт'};
+  showModal(id?'Изменить заявку':'Новая заявка на закупку',[
+    {key:'what',label:'Наименование *'},
+    {key:'qty',label:'Количество *',type:'number'},
+    {key:'unit',label:'Ед. изм.',type:'select',options:['шт','м','м²','м³','кг','т','л','компл']},
+    {key:'price',label:'Цена, ₽',type:'number'},
+    {key:'supplier',label:'Поставщик'},
+    {key:'due',label:'Срок',type:'date'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_PUR},
+  ],p,v=>{const nid=id||newId('pur');state.purchases[nid]={...v,id:nid};save();render()});
+}
+
+function editClient(id){
+  const c=id?state.clients[id]:{};
+  showModal(id?'Изменить':'Новый заказчик',[
+    {key:'name',label:'Наименование *'},
+    {key:'inn',label:'ИНН'},
+    {key:'contact',label:'Контактное лицо'},
+    {key:'phone',label:'Телефон'},
+    {key:'email',label:'Email'},
+  ],c,v=>{const nid=id||newId('cl');state.clients[nid]={...v,id:nid};save();render()});
+}
+
+function editContractor(id){
+  const c=id?state.contractors[id]:{};
+  showModal(id?'Изменить':'Новый исполнитель',[
+    {key:'name',label:'Имя / Наименование *'},
+    {key:'speciality',label:'Специализация'},
+    {key:'phone',label:'Телефон'},
+    {key:'rate',label:'Ставка, ₽/час',type:'number'},
+  ],c,v=>{const nid=id||newId('ct');state.contractors[nid]={...v,id:nid};save();render()});
+}
+
+function togglePaid(id){state.invoices[id].status='Оплачен';save();render()}
+function delItem(col,id){if(confirm('Удалить?')){delete state[col][id];save();render()}}
+
+load();render();
+</script>
+</body>
+</html>

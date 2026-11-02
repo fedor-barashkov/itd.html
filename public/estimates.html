@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Сметы — Проектно-сметная документация</title>
+<style>
+:root{--bg:#202020;--surface:#2b2b2b;--surface-2:#323232;--side:#1c1c1c;--line:#3b3b3b;--fg:#f3f3f3;--fg-2:#c8c8c8;--fg-3:#9a9a9a;--accent:#60cdff;--accent-fg:#00283d;--accent-soft:#1d3747;--ok:#7fd572;--ok-soft:#1e3320;--warn:#ffd75e;--warn-soft:#3a3212;--bad:#ff9aa4;--bad-soft:#47272a;--r:8px;--r-sm:4px;--shadow:none;--font:"Segoe UI",system-ui,sans-serif}
+@media(prefers-color-scheme:light){:root{--bg:#f3f3f3;--surface:#fff;--surface-2:#f7f7f7;--side:#ebebeb;--line:#e1e1e1;--fg:#1b1b1b;--fg-2:#5d5d5d;--fg-3:#8a8a8a;--accent:#005fb8;--accent-fg:#fff;--accent-soft:#e3eefa;--ok:#0f7b0f;--ok-soft:#e3f2e3;--warn:#8a5300;--warn-soft:#fff1c7;--bad:#c42b1c;--bad-soft:#fde7e9;--shadow:0 1px 3px rgba(0,0,0,.08)}}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--font);height:100vh;display:grid;grid-template-rows:auto 1fr;overflow:hidden}button,input,select,textarea{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--side);border-bottom:1px solid var(--line);min-height:48px}
+.logo{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-size:10px;font-weight:700}h1{font-size:18px;font-weight:600}
+.main{display:grid;grid-template-columns:220px 1fr;overflow:hidden}
+nav{background:var(--side);border-right:1px solid var(--line);padding:12px 8px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+nav button{display:flex;align-items:center;gap:8px;padding:8px 12px;border:0;background:0;border-radius:var(--r);cursor:pointer;color:var(--fg-2);text-align:left;width:100%;font-size:13px;position:relative}
+nav button:hover{background:var(--surface-2);color:var(--fg)}
+nav button.active{background:var(--surface);color:var(--fg);font-weight:600}
+nav button.active::before{content:"";width:3px;height:60%;border-radius:3px;background:var(--accent);position:absolute;left:0}
+.content{overflow:auto;padding:24px}.page{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.main{grid-template-columns:1fr}nav{display:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.card-head h2{font-size:15px;font-weight:600}
+.kpi{display:flex;flex-direction:column;gap:4px}.kpi .label{font-size:12px;color:var(--fg-2)}.kpi .value{font-size:22px;font-weight:700}.kpi .delta{font-size:12px;color:var(--fg-3)}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;font-weight:600;color:var(--fg-3);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line)}td{padding:9px 10px;border-bottom:1px solid var(--line)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--surface-2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);cursor:pointer;font-size:13px}.btn:hover{border-color:var(--fg-3)}.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}.btn.sm{padding:4px 10px;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:99px;font-weight:600}.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.info{background:var(--accent-soft);color:var(--accent)}
+.list{display:flex;flex-direction:column}.li{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}.li:last-child{border:0}.li .body{flex:1;min-width:0}.li .t{font-weight:600;font-size:13px}.li .m{font-size:12px;color:var(--fg-3)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:100%;max-width:500px;max-height:90vh;overflow:auto}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:12px}.modal-body label{font-size:12px;color:var(--fg-2);display:block;margin-bottom:4px}
+.modal-body input,.modal-body select,.modal-body textarea{width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px}
+.modal-body textarea{resize:vertical;min-height:60px}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.eyebrow{font-size:12px;color:var(--fg-3);margin-bottom:2px}.empty{text-align:center;padding:40px;color:var(--fg-3)}
+.bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;min-width:60px}.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">СМ</div>
+  <h1>Сметы и проектная документация</h1>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn sm" onclick="exportData()">💾 Экспорт</button>
+    <button class="btn sm" onclick="document.getElementById('imp').click()">📂 Импорт</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+<div class="main">
+  <nav id="nav"></nav>
+  <div class="content"><div class="page" id="page"></div></div>
+</div>
+<div id="modal-root"></div>
+
+<script>
+const KEY='estimates-panel-v1';
+const TODAY=new Date().toISOString().slice(0,10);
+const $=s=>document.querySelector(s);
+const esc=s=>s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; 
+const rub=n=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:0}).format(n||0);
+const ru=iso=>{if(!iso)return'';const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];const[y,mo,d]=iso.split('-');return`${+d} ${m[+mo-1]} ${y}`};
+const ruShort=iso=>{if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}.${m}.${y}`};
+const newId=t=>t+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+
+const STATUS_EST=['В работе','Согласована','Замечания','Сдана'];
+const STATUS_PD=['В работе','Согласован','Замечания','Сдан'];
+const STATUS_OBJ=['В работе','Завершён','Приостановлен','Планируется'];
+const PD_CODES=['ПЗ','ПД-1','ПД-2','ПД-3','ПД-4','ПД-5','ПД-6','ПД-7','ПД-8','ПД-9','ПД-10','ПД-11','ПД-12','ИОС','ПБ','ООС','ПОС','ПОД'];
+
+let state={objects:{},estimates:{},pd:{},remarks:{}};
+let currentPage='dashboard';
+let currentObj=null;
+
+function load(){try{const d=localStorage.getItem(KEY);if(d)state=JSON.parse(d)}catch{}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function all(col){return Object.values(state[col]||{})}
+function byObj(col,objId){return all(col).filter(x=>x.obj===objId)}
+function nextN(col){const ns=all(col).map(x=>parseInt(x.n)||0);return String((ns.length?Math.max(...ns):0)+1)}
+
+function exportData(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`estimates-backup-${TODAY}.json`;a.click()}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();render();alert('Данные загружены')}catch{alert('Ошибка файла')}};r.readAsText(f)}
+
+const NAV=[
+  {id:'dashboard',label:'📊 Главная'},
+  {id:'objects',label:'🏗️ Объекты'},
+  {id:'estimates',label:'🧮 Сметы'},
+  {id:'pd',label:'📐 Разделы ПД'},
+  {id:'remarks',label:'⚠️ Замечания'},
+];
+
+function renderNav(){$('#nav').innerHTML=NAV.map(n=>`<button class="${currentPage===n.id?'active':''}" onclick="go('${n.id}')">${n.label}</button>`).join('')}
+function go(page,obj){currentPage=page;currentObj=obj||null;render()}
+
+function render(){
+  renderNav();
+  const p=$('#page');
+  switch(currentPage){
+    case'dashboard':p.innerHTML=renderDashboard();break;
+    case'objects':p.innerHTML=renderObjects();break;
+    case'estimates':p.innerHTML=renderEstimates();break;
+    case'pd':p.innerHTML=renderPD();break;
+    case'remarks':p.innerHTML=renderRemarks();break;
+    case'obj':p.innerHTML=renderObjectCard();break;
+  }
+}
+
+function renderDashboard(){
+  const objs=all('objects'),ests=all('estimates'),pds=all('pd'),rems=all('remarks');
+  const totalSum=ests.reduce((s,e)=>s+(+e.sum||0),0);
+  const approved=ests.filter(e=>e.status==='Согласована'||e.status==='Сдана').length;
+  const remarks=rems.length;
+  return`
+    <div class="eyebrow">Сметы • ${ru(TODAY)}</div>
+    <h1>Главная</h1>
+    <div class="grid g4">
+      <div class="card"><div class="kpi"><div class="label">Объекты</div><div class="value">${objs.length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Сметы</div><div class="value">${ests.length}</div><div class="delta">${approved} согласовано</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Общая сумма</div><div class="value">${rub(totalSum)}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Замечания</div><div class="value">${remarks}</div><div class="delta">${remarks?'⚠ есть замечания':'✅ нет замечаний'}</div></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><div class="card-head"><h2>Последние сметы</h2><button class="btn sm" onclick="go('estimates')">Все →</button></div>
+        ${ests.length?`<div class="list">${ests.slice(-5).reverse().map(e=>`<div class="li" style="cursor:pointer" onclick="editEstimate('${e.id}')"><div class="body"><div class="t">${esc(e.section)}</div><div class="m">${esc((state.objects[e.obj]||{}).name||'—')} • ${ruShort(e.date)}</div></div><div style="text-align:right"><div style="font-weight:600">${rub(+e.sum)}</div><span class="pill ${e.status==='Согласована'||e.status==='Сдана'?'ok':e.status==='Замечания'?'warn':'info'}">${esc(e.status)}</span></div></div>`).join('')}</div>`:'<div class="empty">Нет смет</div>'}
+      </div>
+      <div class="card"><div class="card-head"><h2>Разделы ПД</h2><button class="btn sm" onclick="go('pd')">Все →</button></div>
+        ${pds.length?`<div class="list">${pds.slice(-5).reverse().map(p=>`<div class="li" style="cursor:pointer" onclick="editPD('${p.id}')"><div class="body"><div class="t">${esc(p.code)} — ${esc(p.title)}</div><div class="m">${esc((state.objects[p.obj]||{}).name||'—')}</div></div><span class="pill ${p.status==='Согласован'||p.status==='Сдан'?'ok':p.status==='Замечания'?'warn':'info'}">${esc(p.status)}</span></div>`).join('')}</div>`:'<div class="empty">Нет разделов</div>'}
+      </div>
+    </div>`;
+}
+
+function renderObjects(){
+  const objs=all('objects');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Объекты</h1><div class="eyebrow">${objs.length} объектов</div></div><button class="btn primary" onclick="editObj()">+ Новый объект</button></div>
+    <div class="card"><table><thead><tr><th>Наименование</th><th>Заказчик</th><th>Сметы</th><th>Сумма</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${objs.map(o=>{const ests=byObj('estimates',o.id);const sum=ests.reduce((s,e)=>s+(+e.sum||0),0);return`<tr class="click" onclick="go('obj','${o.id}')"><td><b>${esc(o.name)}</b></td><td>${esc(o.client||'—')}</td><td>${ests.length}</td><td class="num">${rub(sum)}</td><td><span class="pill ${o.status==='Завершён'?'ok':o.status==='Приостановлен'?'warn':'info'}">${esc(o.status||'В работе')}</span></td><td><button class="btn sm" onclick="event.stopPropagation();editObj('${o.id}')">✏️</button></td></tr>`}).join('')}
+    ${objs.length?'':'<tr><td colspan="6" class="empty">Нет объектов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderObjectCard(){
+  const o=state.objects[currentObj];if(!o)return'<div class="empty">Объект не найден</div>';
+  const ests=byObj('estimates',o.id),pds=byObj('pd',o.id),rems=byObj('remarks',o.id);
+  const sum=ests.reduce((s,e)=>s+(+e.sum||0),0);
+  return`<button class="btn" onclick="go('objects')">← Назад</button>
+    <div style="display:flex;justify-content:space-between;align-items:center"><div><h1>${esc(o.name)}</h1><div class="eyebrow">${esc(o.client||'')} ${o.city?'• '+esc(o.city):''}</div></div><button class="btn" onclick="editObj('${o.id}')">✏️ Изменить</button></div>
+    <div class="grid g4">
+      <div class="card"><div class="kpi"><div class="label">Сметы</div><div class="value">${ests.length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Сумма</div><div class="value">${rub(sum)}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Разделы ПД</div><div class="value">${pds.length}</div></div></div>
+      <div class="card"><div class="kpi"><div class="label">Замечания</div><div class="value">${rems.length}</div></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><div class="card-head"><h2>Сметы</h2><button class="btn sm" onclick="editEstimate(null,'${o.id}')">+ Добавить</button></div>
+        ${ests.length?`<div class="list">${ests.map(e=>`<div class="li" style="cursor:pointer" onclick="editEstimate('${e.id}')"><div class="body"><div class="t">${esc(e.section)}</div><div class="m">${ruShort(e.date)}</div></div><div style="text-align:right"><div style="font-weight:600">${rub(+e.sum)}</div><span class="pill ${e.status==='Согласована'?'ok':'warn'}">${esc(e.status)}</span></div></div>`).join('')}</div>`:'<div class="empty">Нет смет</div>'}
+      </div>
+      <div class="card"><div class="card-head"><h2>Разделы ПД</h2><button class="btn sm" onclick="editPD(null,'${o.id}')">+ Добавить</button></div>
+        ${pds.length?`<div class="list">${pds.map(p=>`<div class="li" style="cursor:pointer" onclick="editPD('${p.id}')"><div class="body"><div class="t">${esc(p.code)} — ${esc(p.title)}</div><div class="m">Стадия: ${esc(p.stage)}</div></div><span class="pill ${p.status==='Согласован'?'ok':'info'}">${esc(p.status)}</span></div>`).join('')}</div>`:'<div class="empty">Нет разделов</div>'}
+      </div>
+    </div>`;
+}
+
+function renderEstimates(){
+  const ests=all('estimates');
+  const total=ests.reduce((s,e)=>s+(+e.sum||0),0);
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Сметы</h1><div class="eyebrow">${ests.length} смет • ${rub(total)}</div></div><button class="btn primary" onclick="editEstimate()">+ Новая смета</button></div>
+    <div class="card"><table><thead><tr><th>№</th><th>Раздел</th><th>Объект</th><th>Дата</th><th>Сумма</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${ests.map(e=>`<tr class="click" onclick="editEstimate('${e.id}')"><td>${esc(e.n)}</td><td><b>${esc(e.section)}</b></td><td>${esc((state.objects[e.obj]||{}).name||'—')}</td><td>${ruShort(e.date)}</td><td class="num"><b>${rub(+e.sum)}</b></td><td><span class="pill ${e.status==='Согласована'||e.status==='Сдана'?'ok':e.status==='Замечания'?'warn':'info'}">${esc(e.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('estimates','${e.id}')">🗑️</button></td></tr>`).join('')}
+    ${ests.length?'':'<tr><td colspan="7" class="empty">Нет смет</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderPD(){
+  const pds=all('pd');
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Разделы проектной документации</h1><div class="eyebrow">${pds.length} разделов</div></div><button class="btn primary" onclick="editPD()">+ Новый раздел</button></div>
+    <div class="card"><table><thead><tr><th>Шифр</th><th>Наименование</th><th>Объект</th><th>Стадия</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${pds.map(p=>`<tr class="click" onclick="editPD('${p.id}')"><td><b>${esc(p.code)}</b></td><td>${esc(p.title)}</td><td>${esc((state.objects[p.obj]||{}).name||'—')}</td><td>${esc(p.stage)}</td><td><span class="pill ${p.status==='Согласован'||p.status==='Сдан'?'ok':p.status==='Замечания'?'warn':'info'}">${esc(p.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('pd','${p.id}')">🗑️</button></td></tr>`).join('')}
+    ${pds.length?'':'<tr><td colspan="6" class="empty">Нет разделов</td></tr>'}
+    </tbody></table></div>`;
+}
+
+function renderRemarks(){
+  const rems=all('remarks').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return`<div style="display:flex;justify-content:space-between;align-items:center"><div><h1>Замечания экспертизы</h1><div class="eyebrow">${rems.length} замечаний</div></div><button class="btn primary" onclick="editRemark()">+ Добавить замечание</button></div>
+    <div class="card"><table><thead><tr><th>Дата</th><th>Объект</th><th>Раздел</th><th>Замечание</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${rems.map(r=>`<tr class="click" onclick="editRemark('${r.id}')"><td>${ruShort(r.date)}</td><td>${esc((state.objects[r.obj]||{}).name||'—')}</td><td>${esc(r.section||'—')}</td><td>${esc(r.text?.slice(0,60))}</td><td><span class="pill ${r.status==='Устранено'?'ok':'warn'}">${esc(r.status)}</span></td><td><button class="btn sm" onclick="event.stopPropagation();delItem('remarks','${r.id}')">🗑️</button></td></tr>`).join('')}
+    ${rems.length?'':'<tr><td colspan="6" class="empty">Нет замечаний</td></tr>'}
+    </tbody></table></div>`;
+}
+
+// MODALS
+function showModal(title,fields,data,onSave){
+  const vals={...data};
+  const html=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h2>${title}</h2><button class="btn sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">${fields.map(f=>{
+      if(f.type==='select')return`<div><label>${f.label}</label><select id="mf_${f.key}">${(f.options||[]).map(o=>`<option value="${o}"${vals[f.key]===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+      if(f.type==='textarea')return`<div><label>${f.label}</label><textarea id="mf_${f.key}" rows="3">${esc(vals[f.key]||'')}</textarea></div>`;
+      return`<div><label>${f.label}</label><input id="mf_${f.key}" type="${f.type||'text'}" value="${esc(vals[f.key]||'')}"></div>`;
+    }).join('')}</div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Отмена</button><button class="btn primary" id="modalSave">Сохранить</button></div>
+  </div></div>`;
+  $('#modal-root').innerHTML=html;
+  $('#modalSave').onclick=()=>{fields.forEach(f=>{vals[f.key]=document.getElementById('mf_'+f.key).value});onSave(vals);closeModal()};
+}
+function closeModal(){$('#modal-root').innerHTML=''}
+function objOptions(sel){return Object.entries(state.objects).map(([id,o])=>`<option value="${id}"${sel===id?' selected':''}>${esc(o.name)}</option>`).join('')}
+
+function editObj(id){
+  const o=id?state.objects[id]:{status:'В работе'};
+  showModal(id?'Изменить объект':'Новый объект',[
+    {key:'name',label:'Наименование *'},
+    {key:'client',label:'Заказчик'},
+    {key:'city',label:'Город'},
+    {key:'inn',label:'ИНН'},
+    {key:'sum',label:'Сумма договора, ₽',type:'number'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_OBJ},
+  ],o,v=>{const nid=id||newId('obj');state.objects[nid]={...v,id:nid};save();render()});
+}
+
+function editEstimate(id,preObj){
+  const e=id?state.estimates[id]:{obj:preObj||'',status:'В работе',date:TODAY};
+  showModal(id?'Изменить смету':'Новая смета',[
+    {key:'obj',label:'Объект *'},
+    {key:'section',label:'Раздел *'},
+    {key:'date',label:'Дата',type:'date'},
+    {key:'sum',label:'Сумма, ₽ *',type:'number'},
+    {key:'status',label:'Статус',type:'select',options:STATUS_EST},
+    {key:'remark',label:'Кол-во замечаний',type:'number'},
+    {key:'notes',label:'Примечания',type:'textarea'},
+  ],e,v=>{if(!v.n)v.n=nextN('estimates');const nid=id||newId('est');state.estimates[nid]={...v,id:nid};save();render()});
+  setTimeout(()=>{const sel=document.getElementById('mf_obj');if(sel)sel.innerHTML='<option value="">—</option>'+objOptions(e.obj)},0);
+}
+
+function editPD(id,preObj){
+  const p=id?state.pd[id]:{obj:preObj||'',status:'В работе',stage:'П'};
+  showModal(id?'Изменить раздел':'Новый раздел ПД',[
+    {key:'obj',label:'Объект *'},
+    {key:'code',label:'Шифр раздела *'},
+    {key:'title',label:'Наименование *'},
+    {key:'stage',label:'Стадия',type:'select',options:['П','Р']},
+    {key:'status',label:'Статус',type:'select',options:STATUS_PD},
+  ],p,v=>{const nid=id||newId('pd');state.pd[nid]={...v,id:nid};save();render()});
+  setTimeout(()=>{const sel=document.getElementById('mf_obj');if(sel)sel.innerHTML='<option value="">—</option>'+objOptions(p.obj)},0);
+}
+
+function editRemark(id){
+  const r=id?state.remarks[id]:{date:TODAY,status:'Новое'};
+  showModal(id?'Изменить замечание':'Новое замечание',[
+    {key:'obj',label:'Объект *'},
+    {key:'section',label:'Раздел'},
+    {key:'date',label:'Дата',type:'date'},
+    {key:'text',label:'Текст замечания *',type:'textarea'},
+    {key:'status',label:'Статус',type:'select',options:['Новое','В работе','Устранено']},
+  ],r,v=>{const nid=id||newId('rem');state.remarks[nid]={...v,id:nid};save();render()});
+  setTimeout(()=>{const sel=document.getElementById('mf_obj');if(sel)sel.innerHTML='<option value="">—</option>'+objOptions(r.obj)},0);
+}
+
+function delItem(col,id){if(confirm('Удалить?')){delete state[col][id];save();render()}}
+
+load();render();
+</script>
+</body>
+</html>
